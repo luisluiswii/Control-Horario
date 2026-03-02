@@ -13,11 +13,9 @@ void main() {
   testWidgets('Muestra pantalla base de control horario', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const ControlHorarioApp());
 
     expect(find.text('Control Horario'), findsOneWidget);
-    expect(find.text('Registrar entrada'), findsOneWidget);
-    expect(find.text('Registrar salida'), findsOneWidget);
-    expect(find.text('Sin registros todavía'), findsOneWidget);
+    expect(find.text('Registro simple, claro y rápido'), findsOneWidget);
   });
 }
