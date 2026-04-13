@@ -1,9 +1,23 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/gestures.dart';
 import 'gestion_page.dart';
+import 'anadir_tareas_page.dart';
+import 'documentos_page.dart';
+import 'encuesta_page.dart';
+import 'cambiar_turno_page.dart';
+import 'trabajadores_page.dart';
+import 'cursos_page.dart';
+import 'asistencias_page.dart';
+import 'quejas_page.dart';
+import 'vacaciones_page.dart';
+import 'nominas_page.dart';
+import 'aprobaciones_page.dart';
+import 'tablon_page.dart';
+
+import 'asistencia_app_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -154,14 +168,14 @@ class AppScrollBehavior extends MaterialScrollBehavior {
 class ControlHorarioApp extends StatefulWidget {
   const ControlHorarioApp({super.key});
 
-  static _ControlHorarioAppState of(BuildContext context) =>
-      context.findAncestorStateOfType<_ControlHorarioAppState>()!;
+  static ControlHorarioAppState of(BuildContext context) =>
+      context.findAncestorStateOfType<ControlHorarioAppState>()!;
 
   @override
-  State<ControlHorarioApp> createState() => _ControlHorarioAppState();
+  State<ControlHorarioApp> createState() => ControlHorarioAppState();
 }
 
-class _ControlHorarioAppState extends State<ControlHorarioApp> {
+class ControlHorarioAppState extends State<ControlHorarioApp> {
   Key _appKey = UniqueKey();
 
   void changeTheme(int index) {
@@ -427,7 +441,7 @@ class _LoginPageState extends State<LoginPage> {
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
                                 labelText: 'Correo electrónico',
-                                prefixIcon: Icon(Icons.alternate_email),
+                                prefixIcon: Icon(Icons.email),
                               ),
                               validator: (value) {
                                 final email = value?.trim() ?? '';
@@ -520,7 +534,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        'Simulando biometrÃ­a... Funcionalidad en desarrollo.',
+                                        'Simulando biometrí­a... Funcionalidad en desarrollo.',
                                       ),
                                     ),
                                   );
@@ -589,12 +603,6 @@ class _HomeShellPageState extends State<HomeShellPage> {
     if (_registros.isEmpty) return false;
     return _registros.first.tipo == TipoRegistro.entrada;
   }
-
-  int get _entradas =>
-      _registros.where((item) => item.tipo == TipoRegistro.entrada).length;
-
-  int get _salidas =>
-      _registros.where((item) => item.tipo == TipoRegistro.salida).length;
 
   Duration get _tiempoAcumulado {
     if (_registros.isEmpty) return Duration.zero;
@@ -705,6 +713,26 @@ class MenuPlaceholderPage extends StatelessWidget {
     // Definimos los items usando tu paleta Océano
     final List<Map<String, dynamic>> menuItems = [
       {
+        'title': 'Vacaciones',
+        'icon': Icons.flight_takeoff,
+        'color': AppColors.accentCoral,
+      },
+      {
+        'title': 'Nóminas',
+        'icon': Icons.account_balance_wallet,
+        'color': AppColors.successGreen,
+      },
+      {
+        'title': 'Aprobaciones',
+        'icon': Icons.fact_check,
+        'color': AppColors.warningOrange,
+      },
+      {
+        'title': 'Tablón',
+        'icon': Icons.campaign,
+        'color': AppColors.primaryTeal,
+      },
+      {
         'title': 'Añadir tareas',
         'icon': Icons.add_task,
         'color': AppColors.primaryTealLight,
@@ -743,6 +771,11 @@ class MenuPlaceholderPage extends StatelessWidget {
         'title': 'Asistencias',
         'icon': Icons.headset_mic_outlined,
         'color': AppColors.dangerRed,
+      },
+      {
+        'title': 'Asistencia App',
+        'icon': Icons.help_outline,
+        'color': AppColors.accentSky,
       },
       {
         'title': 'Quejas',
@@ -809,6 +842,98 @@ class MenuPlaceholderPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => GestionPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.add_task) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AnadirTareasPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.description_outlined) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DocumentosPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.view_in_ar_outlined) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EncuestaPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.swap_horiz) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CambiarTurnoPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.people_outline) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TrabajadoresPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.school_outlined) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CursosPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.headset_mic_outlined) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AsistenciasPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.help_outline) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AsistenciaAppPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.chat_bubble_outline) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuejasPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.flight_takeoff) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => VacacionesPage(),
+                            ),
+                          );
+                        } else if (item['icon'] ==
+                            Icons.account_balance_wallet) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NominasPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.fact_check) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AprobacionesPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.campaign) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TablonPage(),
                             ),
                           );
                         }
@@ -1853,21 +1978,6 @@ class _TimelineTime extends StatelessWidget {
   }
 }
 
-class _TimelineLine extends StatelessWidget {
-  final double height;
-  const _TimelineLine({required this.height});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 2,
-      height: height,
-      color: AppColors.border,
-      margin: EdgeInsets.symmetric(vertical: 8),
-    );
-  }
-}
-
 class _TimelineCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -1951,7 +2061,7 @@ class _TimelineCard extends StatelessWidget {
                         child: Text(
                           badgeText!,
                           style: TextStyle(
-                            color: color.withOpacity(0.8),
+                            color: color.withValues(alpha: 0.8),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),

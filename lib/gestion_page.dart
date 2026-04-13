@@ -48,7 +48,7 @@ class _GestionPageState extends State<GestionPage> {
             'location': 'Planta 2',
             'urgency': 'Media',
             'urgencyColor': AppColors.warningOrange,
-            'assignedTo': 'Lucía R.',
+            'assignedTo': 'Luc\u00eda R.',
           },
         ];
         employees = [
@@ -60,7 +60,7 @@ class _GestionPageState extends State<GestionPage> {
             'role': 'Asistente',
           },
           {
-            'name': 'Lucía R.',
+            'name': 'Luc\u00eda R.',
             'initials': 'LR',
             'available': true,
             'color': AppColors.warningOrange,
@@ -148,7 +148,7 @@ class _GestionPageState extends State<GestionPage> {
             'role': 'Soporte TI',
           },
           {
-            'name': 'Lucía R.',
+            'name': 'Luc\u00eda R.',
             'initials': 'LR',
             'available': false,
             'color': AppColors.warningOrange,
@@ -182,13 +182,124 @@ class _GestionPageState extends State<GestionPage> {
     return shifts.every((shift) => shift['assignedTo'] != null);
   }
 
+  void _showNewShiftDialog(BuildContext context) {
+    String time = '08:00 - 16:00';
+    String role = 'Nuevo Puesto';
+    String urgency = 'Baja';
+
+    Color getUrgencyColor(String u) {
+      if (u == 'Alta') return AppColors.dangerRed;
+      if (u == 'Media') return AppColors.warningOrange;
+      return AppColors.successGreen;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: Text(
+                'Crear Nuevo Puesto',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      labelText: 'Horario (ej. 08:00 - 15:00)',
+                    ),
+                    onChanged: (val) => time = val,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    decoration: InputDecoration(labelText: 'Rol / Puesto'),
+                    onChanged: (val) => role = val,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: urgency,
+                    decoration: const InputDecoration(labelText: 'Urgencia'),
+                    items: ['Alta', 'Media', 'Baja'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setStateDialog(() {
+                          urgency = newValue;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryTeal,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      shifts.add({
+                        'id': 'shift_${DateTime.now().millisecondsSinceEpoch}',
+                        'time': time.isNotEmpty ? time : '08:00 - 16:00',
+                        'role': role.isNotEmpty ? role : 'Nuevo Puesto',
+                        'location': 'Sede Principal',
+                        'urgency': urgency,
+                        'urgencyColor': getUrgencyColor(urgency),
+                        'assignedTo': null,
+                        'isFixed': false,
+                      });
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    'Crear',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showNewShiftDialog(context),
+        backgroundColor: AppColors.primaryTeal,
+        icon: Icon(Icons.add, color: AppColors.white),
+        label: Text(
+          'Nuevo Puesto',
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       appBar: AppBar(
         title: Text(
-          'Gestión de Turnos',
+          'Gesti\u00f3n de Turnos',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -232,7 +343,7 @@ class _GestionPageState extends State<GestionPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Estado visual vacío o completo
+                  // Estado visual vac\u00edo o completo
                   if (_allShiftsAssigned() && shifts.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -266,7 +377,7 @@ class _GestionPageState extends State<GestionPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '¡Todo cubierto!',
+                                  '\u00a1Todo cubierto!',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -276,7 +387,7 @@ class _GestionPageState extends State<GestionPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Todos los turnos de hoy están asignados. Excelente trabajo.',
+                                  'Todos los turnos de hoy est\u00e1n asignados. Excelente trabajo.',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: AppColors.textSecondary.withValues(
@@ -315,7 +426,7 @@ class _GestionPageState extends State<GestionPage> {
                             ),
                             const SizedBox(height: 24),
                             Text(
-                              'Día libre',
+                              'D\u00eda libre',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -339,7 +450,9 @@ class _GestionPageState extends State<GestionPage> {
                     ),
 
                   ...shifts.map((shift) => _buildShiftTarget(shift)),
-                  const SizedBox(height: 32),
+                  const SizedBox(
+                    height: 72,
+                  ), // Changed from 32 to 72 to account for FAB overlap
                 ],
               ),
             ),
@@ -362,7 +475,7 @@ class _GestionPageState extends State<GestionPage> {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24.0, 12.0, 24.0, 24.0),
+                padding: const EdgeInsets.fromLTRB(24.0, 12.0, 24.0, 80.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -432,7 +545,7 @@ class _GestionPageState extends State<GestionPage> {
                                     data: emp,
                                     maxSimultaneousDrags: isAvailable
                                         ? 1
-                                        : 0, // Desactiva arrastre si no está disponible
+                                        : 0, // Desactiva arrastre si no est\u00e1 disponible
                                     onDragStarted: () {
                                       HapticFeedback.lightImpact();
                                       setState(() => _isDragging = true);
@@ -582,179 +695,320 @@ class _GestionPageState extends State<GestionPage> {
     );
   }
 
+  Widget _buildShiftMenu(Map<String, dynamic> shift) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      onSelected: (value) {
+        setState(() {
+          if (value == 'fijar') {
+            shift['isFixed'] = true;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Puesto fijado.'),
+                backgroundColor: AppColors.primaryTeal,
+              ),
+            );
+          } else if (value == 'desfijar') {
+            shift['isFixed'] = false;
+          } else if (value == 'eliminar') {
+            shifts.removeWhere((s) => s['id'] == shift['id']);
+          } else if (value == 'quitar') {
+            shift['assignedTo'] = null;
+            shift['isFixed'] = false;
+          }
+        });
+      },
+      itemBuilder: (BuildContext context) => [
+        if (shift['assignedTo'] != null && shift['isFixed'] != true)
+          const PopupMenuItem<String>(
+            value: 'fijar',
+            child: Row(
+              children: [
+                Icon(Icons.push_pin, size: 18),
+                SizedBox(width: 8),
+                Text('Fijar asignaci\u00f3n'),
+              ],
+            ),
+          ),
+        if (shift['isFixed'] == true)
+          const PopupMenuItem<String>(
+            value: 'desfijar',
+            child: Row(
+              children: [
+                Icon(Icons.push_pin_outlined, size: 18),
+                SizedBox(width: 8),
+                Text('Desfijar asignaci\u00f3n'),
+              ],
+            ),
+          ),
+        if (shift['assignedTo'] != null)
+          const PopupMenuItem<String>(
+            value: 'quitar',
+            child: Row(
+              children: [
+                Icon(Icons.person_remove, size: 18),
+                SizedBox(width: 8),
+                Text('Quitar trabajador'),
+              ],
+            ),
+          ),
+        const PopupMenuItem<String>(
+          value: 'eliminar',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Eliminar turno', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildShiftTarget(Map<String, dynamic> shift) {
     bool isAssigned = shift['assignedTo'] != null;
 
-    return DragTarget<Map<String, dynamic>>(
-      onWillAcceptWithDetails: (details) =>
-          !isAssigned && (details.data['available'] == true),
-      onAcceptWithDetails: (details) {
-        HapticFeedback.heavyImpact();
-        final data = details.data;
+    return Dismissible(
+      key: Key(shift['id'].toString()),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 20),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(28),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        child: const Icon(Icons.delete_outline, color: Colors.red, size: 32),
+      ),
+      onDismissed: (direction) {
+        final removedShift = Map<String, dynamic>.from(shift);
+        final removedIndex = shifts.indexOf(shift);
+
         setState(() {
-          shift['assignedTo'] = data['name'];
+          shifts.removeWhere((s) => s['id'] == shift['id']);
         });
 
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${data['name']} asignado a ${shift['role']}'),
-            backgroundColor: AppColors.successGreen,
+            content: Text('Turno eliminado'),
+            backgroundColor: AppColors.textPrimary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+            action: SnackBarAction(
+              label: 'DESHACER',
+              textColor: AppColors.primaryTealLight,
+              onPressed: () {
+                setState(() {
+                  shifts.insert(removedIndex, removedShift);
+                });
+              },
             ),
           ),
         );
       },
-      builder: (context, candidateData, rejectedData) {
-        bool isHovering = candidateData.isNotEmpty;
-        Color urgencyColor = shift['urgencyColor'];
+      child: DragTarget<Map<String, dynamic>>(
+        onWillAcceptWithDetails: (details) =>
+            !isAssigned && (details.data['available'] == true),
+        onAcceptWithDetails: (details) {
+          HapticFeedback.heavyImpact();
+          final data = details.data;
+          setState(() {
+            shift['assignedTo'] = data['name'];
+          });
 
-        Color baseBg = AppColors.surface;
-        if (isAssigned) {
-          baseBg = AppColors.successGreen.withValues(alpha: 0.05);
-        } else if (isHovering) {
-          baseBg = AppColors.primaryTealLight.withValues(alpha: 0.1);
-        } else if (_isDragging && !isAssigned) {
-          baseBg = urgencyColor.withValues(alpha: 0.02);
-        }
-
-        Color borderColor = AppColors.border.withValues(alpha: 0.5);
-        if (isAssigned) {
-          borderColor = AppColors.successGreen.withValues(alpha: 0.5);
-        } else if (isHovering) {
-          borderColor = AppColors.primaryTealLight;
-        } else if (_isDragging && !isAssigned) {
-          borderColor = urgencyColor.withValues(alpha: 0.3);
-        }
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(
-            color: baseBg,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: isAssigned
-                    ? AppColors.successGreen.withValues(alpha: 0.04)
-                    : (isHovering
-                          ? AppColors.primaryTealLight.withValues(alpha: 0.1)
-                          : Colors.black.withValues(alpha: 0.04)),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${data['name']} asignado a ${shift['role']}'),
+              backgroundColor: AppColors.successGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-            ],
-            border: Border.all(
-              color: borderColor,
-              width: isHovering || isAssigned || (_isDragging && !isAssigned)
-                  ? 1.5
-                  : 0.5,
             ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            isAssigned
-                                ? Icons.check_circle
-                                : Icons.access_time_filled,
-                            size: 20,
-                            color: isAssigned
-                                ? AppColors.successGreen
-                                : AppColors.textSecondary.withValues(
-                                    alpha: 0.7,
-                                  ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            shift['time'],
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              letterSpacing: 0.3,
+          );
+        },
+        builder: (context, candidateData, rejectedData) {
+          bool isHovering = candidateData.isNotEmpty;
+          Color urgencyColor = shift['urgencyColor'];
+
+          Color baseBg = AppColors.surface;
+          if (isAssigned) {
+            baseBg = AppColors.successGreen.withValues(alpha: 0.05);
+          } else if (isHovering) {
+            baseBg = AppColors.primaryTealLight.withValues(alpha: 0.1);
+          } else if (_isDragging && !isAssigned) {
+            baseBg = urgencyColor.withValues(alpha: 0.02);
+          }
+
+          Color borderColor = AppColors.border.withValues(alpha: 0.5);
+          if (isAssigned) {
+            borderColor = AppColors.successGreen.withValues(alpha: 0.5);
+          } else if (isHovering) {
+            borderColor = AppColors.primaryTealLight;
+          } else if (_isDragging && !isAssigned) {
+            borderColor = urgencyColor.withValues(alpha: 0.3);
+          }
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: baseBg,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: isAssigned
+                      ? AppColors.successGreen.withValues(alpha: 0.04)
+                      : (isHovering
+                            ? AppColors.primaryTealLight.withValues(alpha: 0.1)
+                            : Colors.black.withValues(alpha: 0.04)),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+              border: Border.all(
+                color: borderColor,
+                width: isHovering || isAssigned || (_isDragging && !isAssigned)
+                    ? 1.5
+                    : 0.5,
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              isAssigned
+                                  ? Icons.check_circle
+                                  : Icons.access_time_filled,
+                              size: 20,
+                              color: isAssigned
+                                  ? AppColors.successGreen
+                                  : AppColors.textSecondary.withValues(
+                                      alpha: 0.7,
+                                    ),
                             ),
-                          ),
-                        ],
-                      ),
-                      if (!isAssigned)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: urgencyColor.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(
-                              color: urgencyColor.withValues(alpha: 0.2),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Text(
-                            shift['urgency'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: urgencyColor,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Divider(height: 1, thickness: 0.5),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            shift['role'],
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            shift['location'],
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary.withValues(
-                                alpha: 0.8,
+                            const SizedBox(width: 12),
+                            Text(
+                              shift['time'],
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                                letterSpacing: 0.3,
                               ),
                             ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            if (!isAssigned)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: urgencyColor.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: urgencyColor.withValues(alpha: 0.2),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  shift['urgency'],
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: urgencyColor,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                            _buildShiftMenu(shift),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Divider(height: 1, thickness: 0.5),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      shift['role'],
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                        letterSpacing: 0.2,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (shift['isFixed'] == true) ...[
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.push_pin,
+                                      size: 16,
+                                      color: AppColors.primaryTealLight,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                shift['location'],
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      if (isAssigned)
-                        _buildAssignedPill(shift['assignedTo'], shift['id'])
-                      else
-                        _buildEmptySlot(isHovering, _isDragging, urgencyColor),
-                    ],
-                  ),
-                ],
+                        ),
+                        const SizedBox(width: 12),
+                        if (isAssigned)
+                          _buildAssignedPill(shift['assignedTo'], shift['id'])
+                        else
+                          _buildEmptySlot(
+                            isHovering,
+                            _isDragging,
+                            urgencyColor,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1005,7 +1259,7 @@ class _GestionPageState extends State<GestionPage> {
     final days = [
       {'short': 'Lun', 'num': 16},
       {'short': 'Mar', 'num': 17},
-      {'short': 'Mié', 'num': 18},
+      {'short': 'Mi\u00e9', 'num': 18},
       {'short': 'Jue', 'num': 19},
       {'short': 'Vie', 'num': 20},
     ];
