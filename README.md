@@ -1,2 +1,0 @@
-# Control-Horario
-Control Horario
