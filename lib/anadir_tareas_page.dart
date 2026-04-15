@@ -5,10 +5,10 @@ class AnadirTareasPage extends StatefulWidget {
   const AnadirTareasPage({super.key});
 
   @override
-  State<AnadirTareasPage> createState() => _AnadirTareasPageState();
+  State<AnadirTareasPage> createState() => AnadirTareasPageState();
 }
 
-class _AnadirTareasPageState extends State<AnadirTareasPage> {
+class AnadirTareasPageState extends State<AnadirTareasPage> {
   final List<Map<String, dynamic>> _tareas = [
     {'titulo': 'Completar reporte semanal', 'completada': false},
     {'titulo': 'Revisar correos del equipo', 'completada': false},

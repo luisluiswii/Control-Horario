@@ -5,10 +5,10 @@ class DocumentosPage extends StatefulWidget {
   const DocumentosPage({super.key});
 
   @override
-  State<DocumentosPage> createState() => _DocumentosPageState();
+  State<DocumentosPage> createState() => DocumentosPageState();
 }
 
-class _DocumentosPageState extends State<DocumentosPage> {
+class DocumentosPageState extends State<DocumentosPage> {
   final List<Map<String, String>> documentos = [
     {
       'titulo': 'Manual de Empleado',

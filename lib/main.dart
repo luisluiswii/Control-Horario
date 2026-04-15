@@ -16,6 +16,7 @@ import 'vacaciones_page.dart';
 import 'nominas_page.dart';
 import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
+import 'registro_page.dart'; // Import registro
 
 import 'asistencia_app_page.dart';
 
@@ -548,6 +549,23 @@ class _LoginPageState extends State<LoginPage> {
                                   style: TextStyle(
                                     color: AppColors.primaryTeal,
                                   ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const RegistroPage(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                '¿No tienes cuenta? Regístrate aquí',
+                                style: TextStyle(
+                                  color: AppColors.primaryTealLight,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
