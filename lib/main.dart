@@ -16,15 +16,23 @@ import 'vacaciones_page.dart';
 import 'nominas_page.dart';
 import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
-
 import 'asistencia_app_page.dart';
+import 'registro_page.dart';
 
-Future<void> main() async {
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await initializeDateFormatting('es_ES', null);
+
+  await Supabase.initialize(
+    url: 'https://htmumknfebjqjvjwcvug.supabase.co',
+    anonKey: 'sb_publishable_07XgshcqADVom9neTKotTA_4bnCRtR1',
+  );
+
   runApp(const ControlHorarioApp());
 }
-
 class AppColors {
   static Color background = const Color(0xFFF0F9FF);
   static Color surface = const Color(0xFFFFFFFF);
@@ -385,11 +393,70 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _submit() {
+  // 🔥 LOGIN REAL CON SUPABASE + TABLA USUARIO
+  void _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeShellPage()));
+
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
+
+    try {
+      // 1. Autenticar con Supabase Auth
+      final res = await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = res.user;
+      if (user == null) {
+        throw Exception('No se pudo iniciar sesión');
+      }
+
+      // 2. Buscar datos en tu tabla 'usuario'
+      final data = await Supabase.instance.client
+          .from('usuario')
+          .select()
+          .eq('auth_user_id', user.id)
+          .maybeSingle();
+
+      if (data == null) {
+        throw Exception('Tu cuenta no está configurada correctamente');
+      }
+
+      // 3. Validar si está activo
+      if (data['activo'] == false) {
+        throw Exception('Tu cuenta está desactivada');
+      }
+
+      // 4. Obtener rol
+      final rol = data['rol'];
+
+      // 5. Navegar según rol
+      if (rol == 'admin') {
+        Navigator.of(context).pushReplacementNamed('/admin');
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeShellPage()),
+        );
+      }
+    }
+    catch (e) {
+      String mensajeError = 'Ocurrió un error inesperado.';
+
+      // Si el error es de credenciales inválidas
+      if (e.toString().contains('invalid_credentials')) {
+        mensajeError = 'Correo o contraseña incorrectos.';
+      } else if (e.toString().contains('User not found')) {
+        mensajeError = 'No existe una cuenta con ese correo.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensajeError),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -534,7 +601,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        'Simulando biometrí­a... Funcionalidad en desarrollo.',
+                                        'Simulando biometría... Funcionalidad en desarrollo.',
                                       ),
                                     ),
                                   );
@@ -548,6 +615,23 @@ class _LoginPageState extends State<LoginPage> {
                                   style: TextStyle(
                                     color: AppColors.primaryTeal,
                                   ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const RegistroPage(),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                '¿No tienes cuenta? Regístrate aquí',
+                                style: TextStyle(
+                                  color: AppColors.primaryTealLight,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),

@@ -5,10 +5,10 @@ class AnadirTareasPage extends StatefulWidget {
   const AnadirTareasPage({super.key});
 
   @override
-  State<AnadirTareasPage> createState() => _AnadirTareasPageState();
+  State<AnadirTareasPage> createState() => AnadirTareasPageState();
 }
 
-class _AnadirTareasPageState extends State<AnadirTareasPage> {
+class AnadirTareasPageState extends State<AnadirTareasPage> {
   final List<Map<String, dynamic>> _tareas = [
     {'titulo': 'Completar reporte semanal', 'completada': false},
     {'titulo': 'Revisar correos del equipo', 'completada': false},
@@ -103,92 +103,92 @@ class _AnadirTareasPageState extends State<AnadirTareasPage> {
       ),
       body: _tareas.isEmpty
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.task_outlined, size: 80, color: AppColors.border),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay tareas pendientes',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 16,
-                    ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.task_outlined, size: 80, color: AppColors.border),
+            const SizedBox(height: 16),
+            Text(
+              'No hay tareas pendientes',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      )
+          : ListView.builder(
+        padding: const EdgeInsets.all(20),
+        itemCount: _tareas.length,
+        itemBuilder: (context, index) {
+          final tarea = _tareas[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _tareas.length,
-              itemBuilder: (context, index) {
-                final tarea = _tareas[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 8,
-                      ),
-                      title: Text(
-                        tarea['titulo'],
-                        style: TextStyle(
-                          color: tarea['completada']
-                              ? AppColors.textSecondary
-                              : AppColors.textPrimary,
-                          decoration: tarea['completada']
-                              ? TextDecoration.lineThrough
-                              : null,
-                          fontWeight: tarea['completada']
-                              ? FontWeight.normal
-                              : FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                      leading: Checkbox(
-                        value: tarea['completada'],
-                        activeColor: AppColors.successGreen,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        side: BorderSide(
-                          color: AppColors.textSecondary.withValues(alpha: 0.5),
-                          width: 1.5,
-                        ),
-                        onChanged: (bool? value) {
-                          setState(() {
-                            _tareas[index]['completada'] = value ?? false;
-                          });
-                        },
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: AppColors.dangerRed.withValues(alpha: 0.8),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _tareas.removeAt(index);
-                          });
-                        },
-                      ),
-                    ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                title: Text(
+                  tarea['titulo'],
+                  style: TextStyle(
+                    color: tarea['completada']
+                        ? AppColors.textSecondary
+                        : AppColors.textPrimary,
+                    decoration: tarea['completada']
+                        ? TextDecoration.lineThrough
+                        : null,
+                    fontWeight: tarea['completada']
+                        ? FontWeight.normal
+                        : FontWeight.w600,
+                    fontSize: 16,
                   ),
-                );
-              },
+                ),
+                leading: Checkbox(
+                  value: tarea['completada'],
+                  activeColor: AppColors.successGreen,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  side: BorderSide(
+                    color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _tareas[index]['completada'] = value ?? false;
+                    });
+                  },
+                ),
+                trailing: IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    color: AppColors.dangerRed.withValues(alpha: 0.8),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _tareas.removeAt(index);
+                    });
+                  },
+                ),
+              ),
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _agregarTarea,
         backgroundColor: AppColors.primaryTealLight,
