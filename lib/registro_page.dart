@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'main.dart'; // Para reutilizar AppColors
+import 'main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RegistroPage extends StatefulWidget {
   const RegistroPage({super.key});
@@ -36,21 +37,61 @@ class _RegistroPageState extends State<RegistroPage> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Simular registro exitoso
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Registro exitoso. Iniciando sesión...'),
-        backgroundColor: AppColors.successGreen,
-      ),
-    );
+    final email = _emailController.text.trim().toLowerCase();
+    final password = _passwordController.text.trim();
+    final nombre = _nombreController.text.trim();
+    final identificacion = _identificacionController.text.trim();
+    final departamento = _departamentoSeleccionado;
 
-    // Navegar de vuelta al Home (o al Login dependiendo del flujo que desees)
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeShellPage()));
+    try {
+      // 1. Crear usuario en Supabase Auth
+      final response = await Supabase.instance.client.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      final user = response.user;
+      if (user == null) {
+        throw Exception("No se pudo crear el usuario en Supabase Auth");
+      }
+
+      // 2. Insertar datos en tu tabla 'usuario'
+      await Supabase.instance.client.from('usuario').insert({
+        'auth_user_id': user.id,
+        'email': email,
+        'nombre_completo': nombre,
+        'departamento': departamento,
+        'identificacion': identificacion.isEmpty ? null : identificacion,
+        'rol': 'empleado',
+        'activo': true,
+      });
+
+      // 3. Mostrar mensaje
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Registro exitoso.'),
+          backgroundColor: AppColors.successGreen,
+        ),
+      );
+
+      // 4. Navegar al Home
+      await Supabase.instance.client.auth.signOut();
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+
+
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -160,7 +201,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           });
                         },
                         validator: (value) =>
-                            value == null ? 'Selecciona un área' : null,
+                        value == null ? 'Selecciona un área' : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
