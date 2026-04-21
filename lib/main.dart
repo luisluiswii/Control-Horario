@@ -675,6 +675,36 @@ class _HomeShellPageState extends State<HomeShellPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _cargarRegistros();
+  }
+
+  // Cargar fichajes desde Supabase
+  Future<void> _cargarRegistros() async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    final data = await supabase
+        .from('fichajes')
+        .select()
+        .eq('auth_user_id', user.id)
+        .order('fecha_hora', ascending: false)
+        .limit(20);
+
+    setState(() {
+      _registros.clear();
+      for (final item in data) {
+        _registros.add(
+          RegistroHorario(
+            tipo: item['tipo'] == 'entrada'
+                ? TipoRegistro.entrada
+                : TipoRegistro.salida,
+            fecha: DateTime.parse(item['fecha_hora']),
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -713,10 +743,43 @@ class _HomeShellPageState extends State<HomeShellPage> {
     return total;
   }
 
-  void _registrar(TipoRegistro tipo) {
-    setState(() {
-      _registros.insert(0, RegistroHorario(tipo: tipo, fecha: DateTime.now()));
-    });
+  // Guardar en Supabase y actualizar la UI
+  void _registrar(TipoRegistro tipo) async {
+    final supabase = Supabase.instance.client;
+    final user = supabase.auth.currentUser;
+
+    if (user == null) return;
+
+    final usuario = await supabase
+        .from('usuario')
+        .select()
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+
+    if (usuario == null) return;
+
+    final fecha = DateTime.now();
+    final tipoTexto = tipo == TipoRegistro.entrada ? 'entrada' : 'salida';
+
+    try {
+      await supabase.from('fichajes').insert({
+        'auth_user_id': user.id,
+        'nombre_usuario': usuario['nombre_completo'],
+        'tipo': tipoTexto,
+        'fecha_hora': fecha.toIso8601String(),
+      });
+
+      setState(() {
+        _registros.insert(
+          0,
+          RegistroHorario(tipo: tipo, fecha: fecha),
+        );
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al registrar: $e')),
+      );
+    }
   }
 
   @override
@@ -739,10 +802,10 @@ class _HomeShellPageState extends State<HomeShellPage> {
       appBar: _currentIndex == 1
           ? null
           : AppBar(
-              title: Text(titles[_currentIndex]),
-              centerTitle: false,
-              backgroundColor: AppColors.background,
-            ),
+        title: Text(titles[_currentIndex]),
+        centerTitle: false,
+        backgroundColor: AppColors.background,
+      ),
       extendBody: true,
       body: PageView(
         controller: _pageController,
@@ -794,7 +857,6 @@ class MenuPlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Definimos los items usando tu paleta Océano
     final List<Map<String, dynamic>> menuItems = [
       {
         'title': 'Vacaciones',
