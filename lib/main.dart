@@ -18,6 +18,7 @@ import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
 import 'asistencia_app_page.dart';
 import 'registro_page.dart';
+import 'supabase_app_repository.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -670,17 +671,71 @@ class _HomeShellPageState extends State<HomeShellPage> {
   int _currentIndex = 0;
   late final PageController _pageController;
   final List<RegistroHorario> _registros = [];
+  PerfilUsuario? _perfil;
+  bool _cargando = true;
+  String? _errorCarga;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _cargarEstadoInicial();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _cargarEstadoInicial() async {
+    setState(() {
+      _cargando = true;
+      _errorCarga = null;
+    });
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        throw Exception('Sesión no encontrada');
+      }
+
+      final perfil = await SupabaseAppRepository.loadCurrentProfile();
+      final registrosRemotos = await SupabaseAppRepository.loadDayAttendance(
+        user.id,
+        DateTime.now(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _perfil = perfil;
+        _registros
+          ..clear()
+          ..addAll(
+            registrosRemotos.map(
+              (registro) => RegistroHorario(
+                tipo: registro.tipo == 'salida'
+                    ? TipoRegistro.salida
+                    : TipoRegistro.entrada,
+                fecha: registro.fecha,
+              ),
+            ),
+          );
+        _cargando = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorCarga = e.toString();
+        _cargando = false;
+      });
+    }
   }
 
   bool get _jornadaAbierta {
@@ -713,14 +768,64 @@ class _HomeShellPageState extends State<HomeShellPage> {
     return total;
   }
 
-  void _registrar(TipoRegistro tipo) {
-    setState(() {
-      _registros.insert(0, RegistroHorario(tipo: tipo, fecha: DateTime.now()));
-    });
+  Future<void> _registrar(TipoRegistro tipo) async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      return;
+    }
+
+    await SupabaseAppRepository.registerAttendance(
+      authUserId: user.id,
+      tipo: tipo == TipoRegistro.salida ? 'salida' : 'entrada',
+    );
+
+    await _cargarEstadoInicial();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_cargando) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorCarga != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  'No se pudo cargar la sesión',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _errorCarga!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _cargarEstadoInicial,
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final screens = [
       ControlHorarioPage(
         registros: _registros,
@@ -730,7 +835,7 @@ class _HomeShellPageState extends State<HomeShellPage> {
       ),
       CalendarioPage(registros: _registros),
       const MenuPlaceholderPage(),
-      const PerfilPage(),
+      PerfilPage(perfil: _perfil),
     ];
 
     final titles = ['Inicio', 'Calendario', 'Menú', 'Perfil'];
@@ -1075,7 +1180,7 @@ class JornadaResumenPage extends StatelessWidget {
   final int entradas;
   final int salidas;
   final Duration tiempoAcumulado;
-  final ValueChanged<TipoRegistro> onRegistrar;
+  final Future<void> Function(TipoRegistro) onRegistrar;
 
   String _formatearDuracion(Duration duracion) {
     final horas = duracion.inHours;
@@ -2164,7 +2269,9 @@ class _TimelineCard extends StatelessWidget {
 }
 
 class PerfilPage extends StatefulWidget {
-  const PerfilPage({super.key});
+  const PerfilPage({super.key, this.perfil});
+
+  final PerfilUsuario? perfil;
 
   @override
   State<PerfilPage> createState() => _PerfilPageState();
@@ -2260,6 +2367,8 @@ class _PerfilPageState extends State<PerfilPage> {
 
   @override
   Widget build(BuildContext context) {
+    final departamento = widget.perfil?.departamento ?? '';
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -2297,7 +2406,7 @@ class _PerfilPageState extends State<PerfilPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Usuario de prácticas',
+                            widget.perfil?.nombreCompleto ?? 'Usuario de prácticas',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 18,
@@ -2306,12 +2415,22 @@ class _PerfilPageState extends State<PerfilPage> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            'control.horario@empresa.com',
+                            widget.perfil?.email ?? 'control.horario@empresa.com',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 14,
                             ),
                             overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            departamento.isNotEmpty
+                                ? departamento
+                                : 'Sin departamento asignado',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -2544,7 +2663,7 @@ class ControlHorarioPage extends StatefulWidget {
   final List<RegistroHorario> registros;
   final bool jornadaAbierta;
   final Duration tiempoAcumulado;
-  final ValueChanged<TipoRegistro> onRegistrar;
+  final Future<void> Function(TipoRegistro) onRegistrar;
 
   @override
   State<ControlHorarioPage> createState() => _ControlHorarioPageState();

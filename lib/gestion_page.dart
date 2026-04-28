@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'main.dart';
+import 'supabase_app_repository.dart';
 
 class GestionPage extends StatefulWidget {
   const GestionPage({super.key});
@@ -16,6 +17,8 @@ class _GestionPageState extends State<GestionPage> {
   String _activeFilter = 'Todos';
   bool _isDragging = false;
   bool _isBottomPanelExpanded = true;
+  bool _loading = true;
+  String? _error;
 
   List<Map<String, dynamic>> shifts = [];
   List<Map<String, dynamic>> employees = [];
@@ -26,151 +29,72 @@ class _GestionPageState extends State<GestionPage> {
     _changeDay(18);
   }
 
-  void _changeDay(int day) {
+  Future<void> _changeDay(int day) async {
     setState(() {
       _selectedDay = day;
       _activeFilter = 'Todos';
-      if (day == 16) {
-        shifts = [
-          {
-            'id': 's1',
-            'time': '07:00 - 15:00',
-            'role': 'Recepcionista',
-            'location': 'Entrada Principal',
-            'urgency': 'Alta',
-            'urgencyColor': AppColors.dangerRed,
-            'assignedTo': null,
-          },
-          {
-            'id': 's2',
-            'time': '12:00 - 20:00',
-            'role': 'Asistente',
-            'location': 'Planta 2',
-            'urgency': 'Media',
-            'urgencyColor': AppColors.warningOrange,
-            'assignedTo': 'Luc\u00eda R.',
-          },
-        ];
-        employees = [
-          {
-            'name': 'Juan P.',
-            'initials': 'JP',
-            'available': true,
-            'color': AppColors.primaryTealLight,
-            'role': 'Asistente',
-          },
-          {
-            'name': 'Luc\u00eda R.',
-            'initials': 'LR',
-            'available': true,
-            'color': AppColors.warningOrange,
-            'role': 'Asistente',
-          },
-          {
-            'name': 'Mario T.',
-            'initials': 'MT',
-            'available': true,
-            'color': AppColors.successGreen,
-            'role': 'Recepcionista',
-          },
-        ];
-      } else if (day == 17) {
-        shifts = [
-          {
-            'id': 's3',
-            'time': '10:00 - 18:00',
-            'role': 'Desarrollador',
-            'location': 'Remoto',
-            'urgency': 'Baja',
-            'urgencyColor': AppColors.successGreen,
-            'assignedTo': null,
-          },
-        ];
-        employees = [
-          {
-            'name': 'Ana G.',
-            'initials': 'AG',
-            'available': true,
-            'color': AppColors.accentCoral,
-            'role': 'Desarrollador',
-          },
-          {
-            'name': 'Pedro S.',
-            'initials': 'PS',
-            'available': false,
-            'color': AppColors.successGreen,
-            'role': 'Desarrollador',
-          },
-        ];
-      } else {
-        shifts = [
-          {
-            'id': 'shift1',
-            'time': '08:00 - 16:00',
-            'role': 'Desarrollador',
-            'location': 'Oficina Central',
-            'urgency': 'Alta',
-            'urgencyColor': AppColors.dangerRed,
-            'assignedTo': null,
-          },
-          {
-            'id': 'shift2',
-            'time': '14:00 - 22:00',
-            'role': 'Soporte TI',
-            'location': 'Remoto',
-            'urgency': 'Baja',
-            'urgencyColor': AppColors.successGreen,
-            'assignedTo': null,
-          },
-          {
-            'id': 'shift3',
-            'time': '09:00 - 18:00',
-            'role': 'Jefe de Proyecto',
-            'location': 'Sala de Juntas',
-            'urgency': 'Media',
-            'urgencyColor': AppColors.warningOrange,
-            'assignedTo': null,
-          },
-        ];
-        employees = [
-          {
-            'name': 'Ana G.',
-            'initials': 'AG',
-            'available': true,
-            'color': AppColors.accentCoral,
-            'role': 'Desarrollador',
-          },
-          {
-            'name': 'Carlos M.',
-            'initials': 'CM',
-            'available': true,
-            'color': AppColors.primaryTealLight,
-            'role': 'Soporte TI',
-          },
-          {
-            'name': 'Luc\u00eda R.',
-            'initials': 'LR',
-            'available': false,
-            'color': AppColors.warningOrange,
-            'role': 'Jefe de Proyecto',
-          },
-          {
-            'name': 'Pedro S.',
-            'initials': 'PS',
-            'available': true,
-            'color': AppColors.successGreen,
-            'role': 'Desarrollador',
-          },
-          {
-            'name': 'Sofia K.',
-            'initials': 'SK',
-            'available': true,
-            'color': AppColors.primaryTeal,
-            'role': 'Jefe de Proyecto',
-          },
-        ];
-      }
+      _loading = true;
+      _error = null;
     });
+
+    try {
+      final selectedDate = DateTime(2026, 3, day);
+      final loadedEmployees = await SupabaseAppRepository.loadActiveEmployees();
+      final loadedShifts = await SupabaseAppRepository.loadShiftsForDay(
+        selectedDate,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      final assignedIds = loadedShifts
+          .where((shift) => shift.asignadoUsuarioId != null)
+          .map((shift) => shift.asignadoUsuarioId!)
+          .toSet();
+
+      setState(() {
+        employees = loadedEmployees
+            .map(
+              (employee) => {
+                'id': employee.authUserId,
+                'name': employee.nombreCompleto,
+                'initials': _buildInitials(employee.nombreCompleto),
+                'available': !assignedIds.contains(employee.authUserId),
+                'color': _colorForRole(employee.rol),
+                'role': employee.rol,
+              },
+            )
+            .toList();
+
+        shifts = loadedShifts
+            .map(
+              (shift) => {
+                'id': shift.id,
+                'time': shift.rangoHorario,
+                'role': shift.rol,
+                'location': shift.ubicacion,
+                'urgency': shift.urgencia,
+                'urgencyColor': _urgencyColor(shift.urgenciaColor),
+                'assignedTo': shift.asignadoUsuarioNombre,
+                'assignedUserId': shift.asignadoUsuarioId,
+                'isFixed': shift.isFixed,
+              },
+            )
+            .toList();
+
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
   bool _isEmployeeAssigned(String employeeName) {
@@ -182,16 +106,48 @@ class _GestionPageState extends State<GestionPage> {
     return shifts.every((shift) => shift['assignedTo'] != null);
   }
 
+  Color _colorForRole(String rol) {
+    final normalized = rol.toLowerCase();
+    if (normalized.contains('soporte')) return AppColors.primaryTealLight;
+    if (normalized.contains('proyecto')) return AppColors.warningOrange;
+    if (normalized.contains('desarroll')) return AppColors.accentCoral;
+    if (normalized.contains('recepcion')) return AppColors.successGreen;
+    return AppColors.primaryTeal;
+  }
+
+  Color _urgencyColor(String urgencyColor) {
+    switch (urgencyColor) {
+      case 'danger':
+        return AppColors.dangerRed;
+      case 'warning':
+        return AppColors.warningOrange;
+      default:
+        return AppColors.successGreen;
+    }
+  }
+
+  String _buildInitials(String name) {
+    final parts = name
+        .split(' ')
+        .where((part) => part.trim().isNotEmpty)
+        .toList();
+    if (parts.isEmpty) {
+      return '??';
+    }
+
+    if (parts.length == 1) {
+      final first = parts.first.trim();
+      return first.isEmpty ? '??' : first.substring(0, 1).toUpperCase();
+    }
+
+    return '${parts.first[0]}${parts[1][0]}'.toUpperCase();
+  }
+
   void _showNewShiftDialog(BuildContext context) {
     String time = '08:00 - 16:00';
     String role = 'Nuevo Puesto';
     String urgency = 'Baja';
-
-    Color getUrgencyColor(String u) {
-      if (u == 'Alta') return AppColors.dangerRed;
-      if (u == 'Media') return AppColors.warningOrange;
-      return AppColors.successGreen;
-    }
+    String location = 'Sede Principal';
 
     showDialog(
       context: context,
@@ -225,6 +181,11 @@ class _GestionPageState extends State<GestionPage> {
                     onChanged: (val) => role = val,
                   ),
                   const SizedBox(height: 16),
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Ubicacion'),
+                    onChanged: (val) => location = val,
+                  ),
+                  const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: urgency,
                     decoration: const InputDecoration(labelText: 'Urgencia'),
@@ -256,20 +217,35 @@ class _GestionPageState extends State<GestionPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryTeal,
                   ),
-                  onPressed: () {
-                    setState(() {
-                      shifts.add({
-                        'id': 'shift_${DateTime.now().millisecondsSinceEpoch}',
-                        'time': time.isNotEmpty ? time : '08:00 - 16:00',
-                        'role': role.isNotEmpty ? role : 'Nuevo Puesto',
-                        'location': 'Sede Principal',
-                        'urgency': urgency,
-                        'urgencyColor': getUrgencyColor(urgency),
-                        'assignedTo': null,
-                        'isFixed': false,
-                      });
-                    });
+                  onPressed: () async {
+                    final range = time.split('-').map((value) => value.trim()).toList();
+                    final horaInicio = range.isNotEmpty && range.first.isNotEmpty
+                        ? range.first
+                        : '08:00';
+                    final horaFin = range.length > 1 && range[1].isNotEmpty
+                        ? range[1]
+                        : '16:00';
+
+                    await SupabaseAppRepository.createShift(
+                      date: DateTime(2026, 3, _selectedDay),
+                      horaInicio: horaInicio,
+                      horaFin: horaFin,
+                      rol: role.isNotEmpty ? role : 'Nuevo Puesto',
+                      ubicacion: location.isNotEmpty ? location : 'Sede Principal',
+                      urgencia: urgency,
+                      urgenciaColor: urgency == 'Alta'
+                          ? 'danger'
+                          : urgency == 'Media'
+                              ? 'warning'
+                              : 'success',
+                    );
+
+                    if (!context.mounted) {
+                      return;
+                    }
+
                     Navigator.pop(context);
+                    await _changeDay(_selectedDay);
                   },
                   child: const Text(
                     'Crear',
@@ -784,9 +760,15 @@ class _GestionPageState extends State<GestionPage> {
         padding: const EdgeInsets.only(right: 24),
         child: const Icon(Icons.delete_outline, color: Colors.red, size: 32),
       ),
-      onDismissed: (direction) {
+      onDismissed: (direction) async {
         final removedShift = Map<String, dynamic>.from(shift);
         final removedIndex = shifts.indexOf(shift);
+
+        await SupabaseAppRepository.deleteShift(shift['id'].toString());
+
+        if (!mounted) {
+          return;
+        }
 
         setState(() {
           shifts.removeWhere((s) => s['id'] == shift['id']);
@@ -813,11 +795,22 @@ class _GestionPageState extends State<GestionPage> {
       child: DragTarget<Map<String, dynamic>>(
         onWillAcceptWithDetails: (details) =>
             !isAssigned && (details.data['available'] == true),
-        onAcceptWithDetails: (details) {
+        onAcceptWithDetails: (details) async {
           HapticFeedback.heavyImpact();
           final data = details.data;
+          await SupabaseAppRepository.assignShift(
+            shiftId: shift['id'].toString(),
+            userId: data['id']?.toString(),
+            userName: data['name']?.toString(),
+          );
+
+          if (!mounted) {
+            return;
+          }
+
           setState(() {
             shift['assignedTo'] = data['name'];
+            shift['assignedUserId'] = data['id'];
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -993,7 +986,7 @@ class _GestionPageState extends State<GestionPage> {
                         ),
                         const SizedBox(width: 12),
                         if (isAssigned)
-                          _buildAssignedPill(shift['assignedTo'], shift['id'])
+                          _buildAssignedPill(shift)
                         else
                           _buildEmptySlot(
                             isHovering,
@@ -1059,13 +1052,24 @@ class _GestionPageState extends State<GestionPage> {
     );
   }
 
-  Widget _buildAssignedPill(String name, String shiftId) {
+  Widget _buildAssignedPill(Map<String, dynamic> shift) {
+    final String name = shift['assignedTo']?.toString() ?? 'Asignado';
     return InkWell(
-      onTap: () {
+      onTap: () async {
         HapticFeedback.lightImpact();
+        await SupabaseAppRepository.assignShift(
+          shiftId: shift['id'].toString(),
+          userId: null,
+          userName: null,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
         setState(() {
-          final shift = shifts.firstWhere((s) => s['id'] == shiftId);
           shift['assignedTo'] = null;
+          shift['assignedUserId'] = null;
         });
       },
       borderRadius: BorderRadius.circular(30),
