@@ -18,7 +18,9 @@ import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
 import 'asistencia_app_page.dart';
 import 'registro_page.dart';
-
+import 'historial_fichajes_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -200,6 +202,17 @@ class ControlHorarioAppState extends State<ControlHorarioApp> {
       title: 'Control Horario',
       debugShowCheckedModeBanner: false,
       scrollBehavior: AppScrollBehavior(),
+
+      locale: const Locale('es'),
+      supportedLocales: const [
+        Locale('es'),
+      ],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: AppColors.background,
@@ -210,7 +223,7 @@ class ControlHorarioAppState extends State<ControlHorarioApp> {
         ),
         colorScheme: ColorScheme.fromSeed(
           brightness:
-              (AppColors.currentTheme == 3 || AppColors.currentTheme == 6)
+          (AppColors.currentTheme == 3 || AppColors.currentTheme == 6)
               ? Brightness.dark
               : Brightness.light,
           seedColor: AppColors.primaryTeal,
@@ -267,6 +280,9 @@ class ControlHorarioAppState extends State<ControlHorarioApp> {
           ),
         ),
       ),
+        routes: {
+          "/documentos": (context) => const DocumentosPage(),
+        },
       home: const SplashPage(),
     );
   }
@@ -2877,16 +2893,43 @@ class _ControlHorarioPageState extends State<ControlHorarioPage> {
             SizedBox(height: 24),
 
             // Recent Logs
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Actividad Reciente',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Actividad Reciente',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
-                TextButton(onPressed: () {}, child: Text('Ver todo')),
-              ],
-            ),
+              ),
+
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  backgroundColor: AppColors.primaryTeal.withOpacity(0.12),
+                  foregroundColor: AppColors.primaryTeal,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const HistorialFichajesScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Ver todo',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
             SizedBox(height: 8),
 
             if (widget.registros.isEmpty)
