@@ -125,14 +125,15 @@ class _RegistroPageState extends State<RegistroPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Únete a Nosotros',
+                        'Registrar Trabajador',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
+                      /*
                       Text(
                         'Completa tu perfil corporativo para acceder al panel de control de horas.',
                         textAlign: TextAlign.center,
@@ -141,6 +142,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                       */
                       const SizedBox(height: 24),
                       TextFormField(
                         controller: _nombreController,
@@ -245,10 +247,11 @@ class _RegistroPageState extends State<RegistroPage> {
                         child: ElevatedButton.icon(
                           onPressed: _submit,
                           icon: const Icon(Icons.person_add),
-                          label: const Text('Registrarse'),
+                          label: const Text('Registrar'),
                         ),
                       ),
                       const SizedBox(height: 16),
+                      /*
                       TextButton(
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -258,6 +261,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           style: TextStyle(color: AppColors.primaryTealLight),
                         ),
                       ),
+                      */
                     ],
                   ),
                 ),

@@ -417,7 +417,6 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     try {
-      // 1. Autenticar con Supabase Auth
       final res = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
@@ -428,7 +427,6 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('No se pudo iniciar sesión');
       }
 
-      // 2. Buscar datos en tu tabla 'usuario'
       final data = await Supabase.instance.client
           .from('usuario')
           .select()
@@ -439,15 +437,12 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Tu cuenta no está configurada correctamente');
       }
 
-      // 3. Validar si está activo
       if (data['activo'] == false) {
         throw Exception('Tu cuenta está desactivada');
       }
 
-      // 4. Obtener rol
       final rol = data['rol'];
 
-      // 5. Navegar según rol
       if (rol == 'admin') {
         Navigator.of(context).pushReplacementNamed('/admin');
       } else {
@@ -455,11 +450,9 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(builder: (_) => const HomeShellPage()),
         );
       }
-    }
-    catch (e) {
+    } catch (e) {
       String mensajeError = 'Ocurrió un error inesperado.';
 
-      // Si el error es de credenciales inválidas
       if (e.toString().contains('invalid_credentials')) {
         mensajeError = 'Correo o contraseña incorrectos.';
       } else if (e.toString().contains('User not found')) {
@@ -588,6 +581,8 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             SizedBox(height: 16),
+
+                            /*
                             Row(
                               children: [
                                 Expanded(
@@ -609,7 +604,11 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ),
+                            */
+
                             SizedBox(height: 16),
+
+                            /*
                             SizedBox(
                               width: double.infinity,
                               child: OutlinedButton.icon(
@@ -634,7 +633,11 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                             ),
+                            */
+
                             SizedBox(height: 16),
+
+                            /*
                             TextButton(
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -651,6 +654,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                             ),
+                            */
                           ],
                         ),
                       ),
