@@ -17,15 +17,15 @@ class _RegistroPageState extends State<RegistroPage> {
   final _confirmPasswordController = TextEditingController();
   final _identificacionController = TextEditingController();
 
-  String? _departamentoSeleccionado;
-  final List<String> _departamentos = [
-    'Recursos Humanos',
-    'Desarrollo / IT',
-    'Marketing',
-    'Ventas',
-    'Administración',
-    'Operaciones',
-  ];
+  // String? _departamentoSeleccionado;
+  // final List<String> _departamentos = [
+  //   'Recursos Humanos',
+  //   'Desarrollo / IT',
+  //   'Marketing',
+  //   'Ventas',
+  //   'Administración',
+  //   'Operaciones',
+  // ];
 
   @override
   void dispose() {
@@ -44,7 +44,7 @@ class _RegistroPageState extends State<RegistroPage> {
     final password = _passwordController.text.trim();
     final nombre = _nombreController.text.trim();
     final identificacion = _identificacionController.text.trim();
-    final departamento = _departamentoSeleccionado;
+    // final departamento = _departamentoSeleccionado;
 
     try {
       // 1. Crear usuario en Supabase Auth
@@ -63,7 +63,7 @@ class _RegistroPageState extends State<RegistroPage> {
         'auth_user_id': user.id,
         'email': email,
         'nombre_completo': nombre,
-        'departamento': departamento,
+        // 'departamento': departamento,
         'identificacion': identificacion.isEmpty ? null : identificacion,
         'rol': 'empleado',
         'activo': true,
@@ -82,7 +82,6 @@ class _RegistroPageState extends State<RegistroPage> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
-
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -132,18 +131,8 @@ class _RegistroPageState extends State<RegistroPage> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      /*
-                      Text(
-                        'Completa tu perfil corporativo para acceder al panel de control de horas.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                       */
                       const SizedBox(height: 24),
+
                       TextFormField(
                         controller: _nombreController,
                         decoration: const InputDecoration(
@@ -158,6 +147,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         },
                       ),
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -177,6 +167,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         },
                       ),
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _identificacionController,
                         decoration: const InputDecoration(
@@ -185,6 +176,9 @@ class _RegistroPageState extends State<RegistroPage> {
                         ),
                       ),
                       const SizedBox(height: 14),
+
+                      // 🔵 CAMPO DEPARTAMENTO COMENTADO
+                      /*
                       DropdownButtonFormField<String>(
                         decoration: const InputDecoration(
                           labelText: 'Departamento',
@@ -203,9 +197,11 @@ class _RegistroPageState extends State<RegistroPage> {
                           });
                         },
                         validator: (value) =>
-                        value == null ? 'Selecciona un área' : null,
+                            value == null ? 'Selecciona un área' : null,
                       ),
                       const SizedBox(height: 14),
+                      */
+
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
@@ -224,6 +220,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         },
                       ),
                       const SizedBox(height: 14),
+
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: true,
@@ -242,6 +239,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         },
                       ),
                       const SizedBox(height: 24),
+
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -250,18 +248,6 @@ class _RegistroPageState extends State<RegistroPage> {
                           label: const Text('Registrar'),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      /*
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(
-                          '¿Ya tienes cuenta? Inicia sesión aquí',
-                          style: TextStyle(color: AppColors.primaryTealLight),
-                        ),
-                      ),
-                      */
                     ],
                   ),
                 ),

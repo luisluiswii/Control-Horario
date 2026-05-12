@@ -12,7 +12,9 @@ class DocumentosPage extends StatefulWidget {
 }
 
 class DocumentosPageState extends State<DocumentosPage> {
+
   List<Map<String, String>> documentos = [
+    /*
     {
       'titulo': 'Manual de Empleado',
       'fecha': '10/03/2026',
@@ -37,6 +39,7 @@ class DocumentosPageState extends State<DocumentosPage> {
       'tipo': 'JPG',
       'categoria': 'Personales',
     },
+    */
   ];
 
   @override
@@ -197,7 +200,7 @@ class DocumentosPageState extends State<DocumentosPage> {
             indicatorColor: AppColors.accentSky,
             tabs: const [
               Tab(text: 'Mi Repositorio'),
-              Tab(text: 'Normativa Empresa'),
+              // Tab(text: 'Normativa Empresa'),
             ],
           ),
         ),
