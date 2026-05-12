@@ -17,13 +17,25 @@ class _RegistroPageState extends State<RegistroPage> {
   final _identificacionController = TextEditingController();
 
   String? _departamentoSeleccionado;
+  // [peluquería] Lista original (perfil corporativo). Conservada como
+  // comentario para que las otras empresas del proyecto puedan restaurarla:
+  //
+  // final List<String> _departamentos = [
+  //   'Recursos Humanos',
+  //   'Desarrollo / IT',
+  //   'Marketing',
+  //   'Ventas',
+  //   'Administración',
+  //   'Operaciones',
+  // ];
+  //
+  // Lista adaptada al perfil de peluquería pequeña:
   final List<String> _departamentos = [
-    'Recursos Humanos',
-    'Desarrollo / IT',
-    'Marketing',
-    'Ventas',
+    'Peluquería',
+    'Estética',
+    'Recepción',
+    'Encargado/a',
     'Administración',
-    'Operaciones',
   ];
 
   @override

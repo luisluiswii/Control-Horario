@@ -289,8 +289,16 @@ class _SplashPageState extends State<SplashPage>
 
     _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
       if (!mounted) return;
-      // [peluquería] Si el usuario marcó "Mantener sesión iniciada" en su
-      // último login, saltamos LoginPage y vamos directos al panel.
+      // [peluquería] Navegación original (siempre LoginPage) conservada como
+      // comentario:
+      //
+      // Navigator.of(context).pushReplacement(
+      //   MaterialPageRoute(builder: (_) => const LoginPage()),
+      // );
+      //
+      // Nueva versión: si el usuario marcó "Mantener sesión iniciada" en su
+      // último login, saltamos LoginPage y vamos directos al panel. Si no
+      // hay sesión activa, el comportamiento es idéntico al original.
       final hasSession = AuthSession().isActive();
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -397,6 +405,17 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
+
+  // [peluquería] _submit original (sin persistencia de sesión). Conservado
+  // como comentario para no borrar código del equipo. Si quieres revertir,
+  // descomenta esto y borra la versión async de debajo.
+  //
+  // void _submit() {
+  //   if (!(_formKey.currentState?.validate() ?? false)) return;
+  //   Navigator.of(context).pushReplacement(
+  //     MaterialPageRoute(builder: (_) => const HomeShellPage()),
+  //   );
+  // }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -572,6 +591,17 @@ class _LoginPageState extends State<LoginPage> {
                                   },
                                 ),
                                 const Expanded(child: Text('Mantener sesión iniciada')),
+                                // [peluquería] onPressed original (stub que
+                                // solo mostraba SnackBar de "próxima versión").
+                                // Conservado como comentario:
+                                //
+                                // onPressed: () {
+                                //   ScaffoldMessenger.of(context).showSnackBar(
+                                //     const SnackBar(
+                                //       content: Text('Función de recuperación en próxima versión.'),
+                                //     ),
+                                //   );
+                                // },
                                 TextButton(
                                   onPressed: _showForgotPasswordDialog,
                                   child: Text('¿Olvidaste tu clave?'),
@@ -1678,6 +1708,13 @@ class _PerfilPageState extends State<PerfilPage> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   leading: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.warningOrange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.logout, color: AppColors.warningOrange, size: 24)),
                   title: Text('Cerrar sesión', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.warningOrange)),
+                  // [peluquería] onTap original (sin limpiar sesión). Conservado
+                  // como comentario:
+                  //
+                  // onTap: () {
+                  //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary));
+                  //   Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
+                  // },
                   onTap: () async {
                     // [peluquería] Limpiamos la sesión persistida antes de
                     // volver al login, si no el próximo arranque saltaría el
