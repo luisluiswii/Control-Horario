@@ -19,11 +19,13 @@ import 'tablon_page.dart';
 import 'registro_page.dart';
 import 'asistencia_app_page.dart';
 import 'modules_management_page.dart';
+import 'auth_session.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es_ES', null);
   await ModulesManager().cargar(); // 👈 NUEVO: carga los módulos guardados
+  await AuthSession().cargar(); // [peluquería] carga sesión persistida (Mantener sesión iniciada)
   runApp(const ControlHorarioApp());
 }
 
@@ -287,8 +289,13 @@ class _SplashPageState extends State<SplashPage>
 
     _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
       if (!mounted) return;
+      // [peluquería] Si el usuario marcó "Mantener sesión iniciada" en su
+      // último login, saltamos LoginPage y vamos directos al panel.
+      final hasSession = AuthSession().isActive();
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
+        MaterialPageRoute(
+          builder: (_) => hasSession ? const HomeShellPage() : const LoginPage(),
+        ),
       );
     });
   }
@@ -373,17 +380,115 @@ class _LoginPageState extends State<LoginPage> {
   bool _remember = true;
 
   @override
+  void initState() {
+    super.initState();
+    // [peluquería] Si quedó un correo guardado de una sesión anterior con
+    // "Mantener sesión iniciada", lo precargamos en el campo para no obligar
+    // al usuario a teclearlo de nuevo.
+    final savedEmail = AuthSession().savedEmail;
+    if (savedEmail.isNotEmpty) {
+      _emailController.text = savedEmail;
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // [peluquería] Persistimos (o limpiamos) la sesión según el checkbox
+    // "Mantener sesión iniciada" antes de entrar al panel.
+    await AuthSession().save(
+      email: _emailController.text.trim(),
+      remember: _remember,
+    );
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const HomeShellPage()),
     );
+  }
+
+  /// [peluquería] Diálogo de recuperación de contraseña.
+  ///
+  /// Como este branch no tiene aún backend real (la rama `JuanR-Pablo` añade
+  /// Supabase pero no está mergeada en peluquería), el flujo simula el envío
+  /// validando el correo y mostrando el aviso estándar de "si existe, te
+  /// llegará un correo". Cuando se integre Supabase, sustituir
+  /// `_simulateSendRecovery` por `Supabase.instance.client.auth.resetPasswordForEmail`.
+  Future<void> _showForgotPasswordDialog() async {
+    final dialogFormKey = GlobalKey<FormState>();
+    final dialogEmailController = TextEditingController(
+      text: _emailController.text.trim(),
+    );
+
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Recuperar contraseña'),
+          content: Form(
+            key: dialogFormKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Introduce tu correo y te enviaremos instrucciones para '
+                  'restablecer la contraseña.',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: dialogEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Correo electrónico',
+                    prefixIcon: Icon(Icons.email),
+                  ),
+                  validator: (value) {
+                    final email = value?.trim() ?? '';
+                    if (email.isEmpty) return 'Ingresa tu correo.';
+                    if (!email.contains('@')) return 'Correo inválido.';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!(dialogFormKey.currentState?.validate() ?? false)) return;
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: const Text('Enviar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (sent == true && mounted) {
+      // Mensaje neutro para no filtrar si el correo existe o no en BBDD.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Si el correo ${dialogEmailController.text.trim()} está registrado, '
+            'recibirás un enlace para restablecer la contraseña.',
+          ),
+          backgroundColor: AppColors.successGreen,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+    dialogEmailController.dispose();
   }
 
   @override
@@ -468,13 +573,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                                 const Expanded(child: Text('Mantener sesión iniciada')),
                                 TextButton(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Función de recuperación en próxima versión.'),
-                                      ),
-                                    );
-                                  },
+                                  onPressed: _showForgotPasswordDialog,
                                   child: Text('¿Olvidaste tu clave?'),
                                 ),
                               ],
@@ -688,20 +787,30 @@ class MenuPlaceholderPage extends StatefulWidget {
 class _MenuPlaceholderPageState extends State<MenuPlaceholderPage> {
   @override
   Widget build(BuildContext context) {
+    // ─────────────────────────────────────────────────────────────────────────
+    // PERFIL: PELUQUERÍA (4 PERSONAS)
+    // Se comentan los módulos que no aportan valor en un equipo tan pequeño.
+    // NO BORRAR las líneas comentadas: otras empresas del proyecto (taller,
+    // tercera empresa pendiente) las necesitan, y el repo es plantilla común
+    // para los 3 forks. Para reactivar un módulo en esta rama basta con
+    // descomentar la línea correspondiente, tanto aquí como en
+    // `modules_management_page.dart` (mapas `_activos` y `_iconos`).
+    // Ver `docs/PELUQUERIA.md` para el detalle de la decisión.
+    // ─────────────────────────────────────────────────────────────────────────
     final List<Map<String, dynamic>> menuItems = [
       {'title': 'Vacaciones', 'icon': Icons.flight_takeoff, 'color': AppColors.accentCoral},
       {'title': 'Nóminas', 'icon': Icons.account_balance_wallet, 'color': AppColors.successGreen},
-      {'title': 'Aprobaciones', 'icon': Icons.fact_check, 'color': AppColors.warningOrange},
+      // {'title': 'Aprobaciones', 'icon': Icons.fact_check, 'color': AppColors.warningOrange}, // [peluquería] flujo formal innecesario para 4 personas
       {'title': 'Tablón', 'icon': Icons.campaign, 'color': AppColors.primaryTeal},
       {'title': 'Añadir tareas', 'icon': Icons.add_task, 'color': AppColors.primaryTealLight},
       {'title': 'Documentos', 'icon': Icons.description_outlined, 'color': AppColors.primaryTealLight},
-      {'title': 'Encuesta 360°', 'icon': Icons.view_in_ar_outlined, 'color': AppColors.warningOrange},
+      // {'title': 'Encuesta 360°', 'icon': Icons.view_in_ar_outlined, 'color': AppColors.warningOrange}, // [peluquería] evaluación corporativa, no aplica
       {'title': 'Gestión', 'icon': Icons.settings_outlined, 'color': AppColors.primaryTeal},
       {'title': 'Cambiar turno', 'icon': Icons.swap_horiz, 'color': AppColors.primaryTealLight},
       {'title': 'Trabajadores', 'icon': Icons.people_outline, 'color': AppColors.successGreen},
-      {'title': 'Cursos', 'icon': Icons.school_outlined, 'color': AppColors.primaryTealLight},
-      {'title': 'Asistencias', 'icon': Icons.headset_mic_outlined, 'color': AppColors.dangerRed},
-      {'title': 'Asistencia App', 'icon': Icons.help_outline, 'color': AppColors.accentSky},
+      // {'title': 'Cursos', 'icon': Icons.school_outlined, 'color': AppColors.primaryTealLight}, // [peluquería] formación interna corporativa, no aplica
+      // {'title': 'Asistencias', 'icon': Icons.headset_mic_outlined, 'color': AppColors.dangerRed}, // [peluquería] resolución formal de faltas, lo cubre Vacaciones
+      // {'title': 'Asistencia App', 'icon': Icons.help_outline, 'color': AppColors.accentSky}, // [peluquería] FAQ/soporte tipo empresa grande
       {'title': 'Quejas', 'icon': Icons.chat_bubble_outline, 'color': AppColors.warningOrange},
       {'title': 'Gestionar módulos', 'icon': Icons.tune, 'color': AppColors.primaryTeal},
     ];
@@ -1569,7 +1678,12 @@ class _PerfilPageState extends State<PerfilPage> {
                   contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   leading: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.warningOrange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.logout, color: AppColors.warningOrange, size: 24)),
                   title: Text('Cerrar sesión', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.warningOrange)),
-                  onTap: () {
+                  onTap: () async {
+                    // [peluquería] Limpiamos la sesión persistida antes de
+                    // volver al login, si no el próximo arranque saltaría el
+                    // login de nuevo aunque el usuario haya cerrado sesión.
+                    await AuthSession().clear();
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary));
                     Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
                   },

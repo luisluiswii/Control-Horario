@@ -8,20 +8,28 @@ class ModulesManager {
   factory ModulesManager() => _instance;
   ModulesManager._internal();
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // PERFIL: PELUQUERÍA (4 PERSONAS)
+  // Mantener este mapa sincronizado con `menuItems` de `main.dart`. Los
+  // módulos comentados aquí se ocultan también del panel "Gestionar módulos"
+  // para no confundir al administrador con opciones que no aplican.
+  // NO BORRAR las líneas comentadas: las otras empresas del proyecto las
+  // necesitan. Ver `docs/PELUQUERIA.md`.
+  // ───────────────────────────────────────────────────────────────────────────
   final Map<String, bool> _activos = {
     'Vacaciones': true,
     'Nóminas': true,
-    'Aprobaciones': true,
+    // 'Aprobaciones': true, // [peluquería] desactivado
     'Tablón': true,
     'Añadir tareas': true,
     'Documentos': true,
-    'Encuesta 360°': true,
+    // 'Encuesta 360°': true, // [peluquería] desactivado
     'Gestión': true,
     'Cambiar turno': true,
     'Trabajadores': true,
-    'Cursos': true,
-    'Asistencias': true,
-    'Asistencia App': true,
+    // 'Cursos': true, // [peluquería] desactivado
+    // 'Asistencias': true, // [peluquería] desactivado
+    // 'Asistencia App': true, // [peluquería] desactivado
     'Quejas': true,
   };
 
@@ -58,20 +66,22 @@ class ModulesManagementPage extends StatefulWidget {
 class _ModulesManagementPageState extends State<ModulesManagementPage> {
   final ModulesManager _manager = ModulesManager();
 
+  // [peluquería] iconos sincronizados con `_activos`: las entradas comentadas
+  // arriba también van comentadas aquí. Ver `docs/PELUQUERIA.md`.
   final Map<String, IconData> _iconos = {
     'Vacaciones': Icons.flight_takeoff,
     'Nóminas': Icons.account_balance_wallet,
-    'Aprobaciones': Icons.fact_check,
+    // 'Aprobaciones': Icons.fact_check, // [peluquería] desactivado
     'Tablón': Icons.campaign,
     'Añadir tareas': Icons.add_task,
     'Documentos': Icons.description_outlined,
-    'Encuesta 360°': Icons.view_in_ar_outlined,
+    // 'Encuesta 360°': Icons.view_in_ar_outlined, // [peluquería] desactivado
     'Gestión': Icons.settings_outlined,
     'Cambiar turno': Icons.swap_horiz,
     'Trabajadores': Icons.people_outline,
-    'Cursos': Icons.school_outlined,
-    'Asistencias': Icons.headset_mic_outlined,
-    'Asistencia App': Icons.help_outline,
+    // 'Cursos': Icons.school_outlined, // [peluquería] desactivado
+    // 'Asistencias': Icons.headset_mic_outlined, // [peluquería] desactivado
+    // 'Asistencia App': Icons.help_outline, // [peluquería] desactivado
     'Quejas': Icons.chat_bubble_outline,
   };
 
