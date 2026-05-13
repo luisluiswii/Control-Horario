@@ -158,8 +158,7 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("PDF guardado en Documentos"),
-          duration: const Duration(seconds: 3),
-          showCloseIcon: true,
+          duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
             label: "Ver",
             onPressed: () {
