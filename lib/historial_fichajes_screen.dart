@@ -210,7 +210,10 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
               }
             },
             onSubmit: (value) => Navigator.pop(context),
-            onCancel: () => Navigator.pop(context),
+            onCancel: () {
+              rangoSeleccionado = null;
+              Navigator.pop(context);
+            },
           ),
         ),
       ),
