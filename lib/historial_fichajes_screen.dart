@@ -155,17 +155,31 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
     await guardarPDFLocal(bytes, nombre);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("PDF guardado en Documentos"),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: "Ver",
-            onPressed: () {
-              Navigator.pushNamed(context, "/documentos");
-            },
-          ),
-        ),
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) {
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (Navigator.canPop(dialogContext)) {
+              Navigator.pop(dialogContext);
+            }
+          });
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: const Text("PDF guardado en Documentos"),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pushNamed(context, "/documentos");
+                },
+                child: const Text("Ver"),
+              ),
+            ],
+          );
+        },
       );
     }
   }
@@ -209,7 +223,10 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
               }
             },
             onSubmit: (value) => Navigator.pop(context),
-            onCancel: () => Navigator.pop(context),
+            onCancel: () {
+              rangoSeleccionado = null;
+              Navigator.pop(context);
+            },
           ),
         ),
       ),
