@@ -34,6 +34,7 @@ void main() async {
 
   runApp(const ControlHorarioApp());
 }
+
 class AppColors {
   static Color background = const Color(0xFFF0F9FF);
   static Color surface = const Color(0xFFFFFFFF);
@@ -51,13 +52,11 @@ class AppColors {
   static Color textSecondary = const Color(0xFF475569);
   static Color border = const Color(0xFFE0F2FE);
 
-  // Variable to store current theme index
   static int currentTheme = 0;
 
   static void setTheme(int index) {
     currentTheme = index;
     if (index == 0) {
-      // 0: Default Corporate (ahora es Ocean Blue default)
       background = const Color(0xFFF0F9FF);
       surface = const Color(0xFFFFFFFF);
       primaryTeal = const Color(0xFF0C4A6E);
@@ -72,7 +71,6 @@ class AppColors {
       textSecondary = const Color(0xFF475569);
       border = const Color(0xFFE0F2FE);
     } else if (index == 1) {
-      // 1: Ocean Blue
       background = const Color(0xFFF0F9FF);
       surface = const Color(0xFFFFFFFF);
       primaryTeal = const Color(0xFF0C4A6E);
@@ -87,7 +85,6 @@ class AppColors {
       textSecondary = const Color(0xFF475569);
       border = const Color(0xFFE0F2FE);
     } else if (index == 2) {
-      // 2: Forest Green
       background = const Color(0xFFF0FDF4);
       surface = const Color(0xFFFFFFFF);
       primaryTeal = const Color(0xFF064E3B);
@@ -102,7 +99,6 @@ class AppColors {
       textSecondary = const Color(0xFF475569);
       border = const Color(0xFFDCFCE7);
     } else if (index == 3) {
-      // 3: Dark Mode
       background = const Color(0xFF0F172A);
       surface = const Color(0xFF1E293B);
       primaryTeal = const Color(0xFFE2E8F0);
@@ -117,7 +113,6 @@ class AppColors {
       textSecondary = const Color(0xFF94A3B8);
       border = const Color(0xFF334155);
     } else if (index == 4) {
-      // 4: Sunset Orange
       background = const Color(0xFFFFF7ED);
       surface = const Color(0xFFFFFFFF);
       primaryTeal = const Color(0xFFC2410C);
@@ -132,7 +127,6 @@ class AppColors {
       textSecondary = const Color(0xFF78350F);
       border = const Color(0xFFFFEDD5);
     } else if (index == 5) {
-      // 5: Lavender Purple
       background = const Color(0xFFFAF5FF);
       surface = const Color(0xFFFFFFFF);
       primaryTeal = const Color(0xFF6B21A8);
@@ -147,7 +141,6 @@ class AppColors {
       textSecondary = const Color(0xFF581C87);
       border = const Color(0xFFF3E8FF);
     } else if (index == 6) {
-      // 6: Midnight (Azul Profundo oscuro)
       background = const Color(0xFF020617);
       surface = const Color(0xFF0F172A);
       primaryTeal = const Color(0xFF38BDF8);
@@ -300,7 +293,34 @@ class _SplashPageState extends State<SplashPage>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
+    _navigationTimer = Timer(const Duration(milliseconds: 2400), () async {
+      if (!mounted) return;
+
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        try {
+          final data = await Supabase.instance.client
+              .from('usuario')
+              .select('rol, activo')
+              .eq('auth_user_id', session.user.id)
+              .maybeSingle();
+
+          if (!mounted) return;
+
+          if (data != null && data['activo'] == true) {
+            // Nota: aquí podríamos enrutar a una 'AdminPage()' si rol es admin,
+            // pero para el flujo general vamos al Dashboard principal de la app.
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const HomeShellPage()),
+            );
+            return;
+          }
+        } catch (_) {
+          // Si hay algún fallo de red o el usuario fue borrado, forzamos login
+          await Supabase.instance.client.auth.signOut();
+        }
+      }
+
       if (!mounted) return;
       Navigator.of(
         context,
@@ -394,7 +414,6 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  // 🔥 LOGIN REAL CON SUPABASE + TABLA USUARIO
   void _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -402,7 +421,6 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     try {
-      // 1. Autenticar con Supabase Auth
       final res = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
@@ -413,7 +431,6 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('No se pudo iniciar sesión');
       }
 
-      // 2. Buscar datos en tu tabla 'usuario'
       final data = await Supabase.instance.client
           .from('usuario')
           .select()
@@ -424,15 +441,12 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception('Tu cuenta no está configurada correctamente');
       }
 
-      // 3. Validar si está activo
       if (data['activo'] == false) {
         throw Exception('Tu cuenta está desactivada');
       }
 
-      // 4. Obtener rol
       final rol = data['rol'];
 
-      // 5. Navegar según rol
       if (rol == 'admin') {
         Navigator.of(context).pushReplacementNamed('/admin');
       } else {
@@ -440,11 +454,9 @@ class _LoginPageState extends State<LoginPage> {
           MaterialPageRoute(builder: (_) => const HomeShellPage()),
         );
       }
-    }
-    catch (e) {
+    } catch (e) {
       String mensajeError = 'Ocurrió un error inesperado.';
 
-      // Si el error es de credenciales inválidas
       if (e.toString().contains('invalid_credentials')) {
         mensajeError = 'Correo o contraseña incorrectos.';
       } else if (e.toString().contains('User not found')) {
@@ -1587,13 +1599,257 @@ class _HistorialPageState extends State<HistorialPage> {
   }
 }
 
-class CalendarioPage extends StatelessWidget {
+class CalendarioPage extends StatefulWidget {
   final List<RegistroHorario> registros;
 
   const CalendarioPage({required this.registros, super.key});
 
   @override
+  State<CalendarioPage> createState() => _CalendarioPageState();
+}
+
+class _CalendarioPageState extends State<CalendarioPage> {
+  late DateTime _focusedMonth;
+  int? _selectedDay;
+  late Map<DateTime, List<RegistroHorario>> _registrosPorDia;
+  List<CalendarioEventoRemote> _eventos = [];
+  bool _eventosLoading = false;
+  String? _eventosError;
+
+  late PageController _pageController;
+  final int _initialPage = 1200;
+
+  @override
+  void initState() {
+    super.initState();
+    _registrosPorDia = _groupByDay(widget.registros);
+    _focusedMonth = _initialMonth();
+    _selectedDay = _initialSelectedDay();
+    _pageController = PageController(initialPage: _initialPage);
+    _loadEventosForMonth();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  DateTime _dayKey(DateTime fecha) => DateTime(fecha.year, fecha.month, fecha.day);
+
+  Map<DateTime, List<RegistroHorario>> _groupByDay(
+    List<RegistroHorario> registros,
+  ) {
+    final Map<DateTime, List<RegistroHorario>> grouped = {};
+    for (final registro in registros) {
+      final key = _dayKey(registro.fecha);
+      grouped.putIfAbsent(key, () => []).add(registro);
+    }
+    return grouped;
+  }
+
+  DateTime _initialMonth() {
+    if (widget.registros.isNotEmpty) {
+      final first = widget.registros.first.fecha;
+      return DateTime(first.year, first.month, 1);
+    }
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, 1);
+  }
+
+  int? _initialSelectedDay() {
+    final now = DateTime.now();
+    if (now.year == _focusedMonth.year && now.month == _focusedMonth.month) {
+      return now.day;
+    }
+    return null;
+  }
+
+  int _daysInMonth(DateTime month) {
+    final nextMonth = DateTime(month.year, month.month + 1, 1);
+    return nextMonth.subtract(const Duration(days: 1)).day;
+  }
+
+  int _leadingEmptyDays(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    return (firstDay.weekday + 6) % 7;
+  }
+
+  void _onPageChanged(int index) {
+    final delta = index - _initialPage;
+    final baseMonth = _initialMonth();
+    setState(() {
+      _focusedMonth = DateTime(baseMonth.year, baseMonth.month + delta, 1);
+      _selectedDay = null;
+    });
+    _loadEventosForMonth();
+  }
+
+  void _goToMonth(int delta) {
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        _pageController.page!.round() + delta,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
+  void _goToToday() {
+    final now = DateTime.now();
+    final baseMonth = _initialMonth();
+    final delta = (now.year - baseMonth.year) * 12 + now.month - baseMonth.month;
+    
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        _initialPage + delta,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+    
+    setState(() {
+      _selectedDay = now.day;
+    });
+  }
+
+  Future<void> _loadEventosForMonth() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _eventosLoading = true;
+      _eventosError = null;
+    });
+
+    try {
+      final eventos = await SupabaseAppRepository.loadCalendarEventsForMonth(
+        user.id,
+        _focusedMonth,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _eventos = eventos;
+        _eventosLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _eventosError = e.toString();
+        _eventosLoading = false;
+      });
+    }
+  }
+
+  List<RegistroHorario> _registrosDelDia(DateTime day) {
+    return _registrosPorDia[_dayKey(day)] ?? [];
+  }
+
+  List<CalendarioEventoRemote> _eventosDelDia(DateTime day) {
+    final key = _dayKey(day);
+    return _eventos.where((evento) => _dayKey(evento.fecha) == key).toList();
+  }
+
+  Color _eventColor(String tipo) {
+    switch (tipo) {
+      case 'incidencia':
+        return AppColors.warningOrange;
+      case 'ausencia':
+        return AppColors.dangerRed;
+      case 'reunion':
+        return AppColors.primaryTealLight;
+      default:
+        return AppColors.successGreen;
+    }
+  }
+
+  List<Color> _buildDotsForDay(DateTime day) {
+    final registros = _registrosDelDia(day);
+    final eventos = _eventosDelDia(day);
+    final List<Color> dots = [];
+
+    if (registros.isNotEmpty) {
+      final entradas = registros.where((r) => r.tipo == TipoRegistro.entrada).length;
+      final salidas = registros.where((r) => r.tipo == TipoRegistro.salida).length;
+      if (entradas > 0 && salidas > 0) {
+        dots.add(AppColors.successGreen);
+      } else {
+        dots.add(AppColors.warningOrange);
+      }
+    }
+
+    for (final evento in eventos) {
+      final color = _eventColor(evento.tipo);
+      if (!dots.contains(color)) {
+        dots.add(color);
+      }
+    }
+
+    return dots;
+  }
+
+  int _asistenciasMes() {
+    final Set<DateTime> dias = {};
+
+    final monthEntries = _registrosPorDia.entries.where(
+      (entry) => entry.key.year == _focusedMonth.year && entry.key.month == _focusedMonth.month,
+    );
+    for (final entry in monthEntries) {
+      final registros = entry.value;
+      final entradas = registros.where((r) => r.tipo == TipoRegistro.entrada).length;
+      final salidas = registros.where((r) => r.tipo == TipoRegistro.salida).length;
+      if (entradas > 0 && salidas > 0) {
+        dias.add(entry.key);
+      }
+    }
+
+    for (final evento in _eventos) {
+      if (evento.fecha.year == _focusedMonth.year &&
+          evento.fecha.month == _focusedMonth.month &&
+          evento.tipo == 'asistencia') {
+        dias.add(_dayKey(evento.fecha));
+      }
+    }
+
+    return dias.length;
+  }
+
+  int _incidenciasMes() {
+    final Set<DateTime> dias = {};
+
+    final monthEntries = _registrosPorDia.entries.where(
+      (entry) => entry.key.year == _focusedMonth.year && entry.key.month == _focusedMonth.month,
+    );
+    for (final entry in monthEntries) {
+      final registros = entry.value;
+      final entradas = registros.where((r) => r.tipo == TipoRegistro.entrada).length;
+      final salidas = registros.where((r) => r.tipo == TipoRegistro.salida).length;
+      if ((entradas > 0 && salidas == 0) || (entradas == 0 && salidas > 0)) {
+        dias.add(entry.key);
+      }
+    }
+
+    for (final evento in _eventos) {
+      if (evento.fecha.year == _focusedMonth.year &&
+          evento.fecha.month == _focusedMonth.month &&
+          evento.tipo == 'incidencia') {
+        dias.add(_dayKey(evento.fecha));
+      }
+    }
+
+    return dias.length;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final monthLabel = DateFormat('MMMM yyyy', 'es_ES').format(_focusedMonth);
+    final leadingEmpty = _leadingEmptyDays(_focusedMonth);
+    final totalDays = _daysInMonth(_focusedMonth);
+    final today = DateTime.now();
+
     return SafeArea(
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -1626,27 +1882,58 @@ class CalendarioPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryTeal.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.history, color: AppColors.primaryTeal),
-                    tooltip: 'Ver historial',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => HistorialPage(registros: registros),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: _goToToday,
+                      icon: Icon(Icons.today_rounded, size: 18, color: AppColors.primaryTeal),
+                      label: Text(
+                        'Hoy',
+                        style: TextStyle(
+                          color: AppColors.primaryTeal,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.primaryTeal.withValues(alpha: 0.1),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryTeal.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.history, color: AppColors.primaryTeal),
+                        tooltip: 'Ver historial',
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => HistorialPage(registros: widget.registros),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
             SizedBox(height: 16),
+            if (_eventosError != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Text(
+                  'No se pudieron cargar eventos: $_eventosError',
+                  style: TextStyle(color: AppColors.dangerRed, fontSize: 12),
+                ),
+              ),
             Container(
               padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1665,38 +1952,35 @@ class CalendarioPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Marzo ',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primaryTealLight,
-                            ),
-                          ),
-                          Text(
-                            '2026',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.background.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _goToMonth(-1),
+                          icon: Icon(Icons.chevron_left_rounded, color: AppColors.textPrimary),
+                          tooltip: 'Mes anterior',
+                        ),
+                      ),
+                      Text(
+                        monthLabel.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       Container(
-                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryTealLight.withValues(
-                            alpha: 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+                          color: AppColors.background.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(
-                          Icons.calendar_today,
-                          color: AppColors.primaryTealLight,
-                          size: 20,
+                        child: IconButton(
+                          onPressed: () => _goToMonth(1),
+                          icon: Icon(Icons.chevron_right_rounded, color: AppColors.textPrimary),
+                          tooltip: 'Mes siguiente',
                         ),
                       ),
                     ],
@@ -1704,16 +1988,16 @@ class CalendarioPage extends StatelessWidget {
                   SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+                    children: ['L', 'M', 'X', 'J', 'V', 'S', 'D']
                         .map(
                           (day) => Expanded(
                             child: Center(
                               child: Text(
                                 day,
                                 style: TextStyle(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 13,
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.textSecondary.withValues(alpha: 0.6),
                                 ),
                               ),
                             ),
@@ -1721,172 +2005,204 @@ class CalendarioPage extends StatelessWidget {
                         )
                         .toList(),
                   ),
-                  SizedBox(height: 8),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 7,
-                          mainAxisSpacing: 4,
-                          crossAxisSpacing: 4,
-                          childAspectRatio: 1.1,
-                        ),
-                    itemCount: 31 + 6,
-                    itemBuilder: (context, index) {
-                      if (index < 6) return const SizedBox.shrink();
-                      final day = index - 6 + 1;
+                  SizedBox(height: 12),
+                  SizedBox(
+                    height: 310,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: _onPageChanged,
+                      itemBuilder: (context, pageIndex) {
+                        final int delta = pageIndex - _initialPage;
+                        final DateTime baseMonth = _initialMonth();
+                        final DateTime monthToRender = DateTime(baseMonth.year, baseMonth.month + delta, 1);
+                        
+                        final int totalDaysPage = _daysInMonth(monthToRender);
+                        final int leadingEmptyPage = _leadingEmptyDays(monthToRender);
 
-                      bool isSelected = day == 24;
-                      List<Color> dots = [];
-                      if (day == 5) dots.add(AppColors.successGreen);
-                      if (day == 12) {
-                        dots.add(AppColors.successGreen);
-                        dots.add(AppColors.primaryTealLight);
-                      }
-                      if (day == 19) dots.add(AppColors.warningOrange);
-                      if (day == 26) dots.add(AppColors.dangerRed);
-                      if (day == 24) {
-                        dots.add(AppColors.white);
-                        dots.add(AppColors.white);
-                      }
+                        return GridView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 7,
+                                mainAxisSpacing: 4,
+                                crossAxisSpacing: 4,
+                                childAspectRatio: 1.05,
+                              ),
+                          itemCount: totalDaysPage + leadingEmptyPage,
+                          itemBuilder: (context, index) {
+                            if (index < leadingEmptyPage) return const SizedBox.shrink();
+                            final day = index - leadingEmptyPage + 1;
+                            final date = DateTime(monthToRender.year, monthToRender.month, day);
+                            final isSelected = _selectedDay == day && _focusedMonth.month == monthToRender.month && _focusedMonth.year == monthToRender.year;
+                            final isToday =
+                                date.year == today.year && date.month == today.month && date.day == today.day;
+                            final dots = _buildDotsForDay(date);
 
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  DetallesDiaPage(dia: day, mes: 3, anio: 2026),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primaryTealLight
-                                : AppColors.background.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(14),
-                            border:
-                                day == 5 || day == 12 || day == 19 || day == 26
-                                ? Border.all(
-                                    color: AppColors.border,
-                                    width: 1.5,
-                                  )
-                                : Border.all(color: Colors.transparent),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '$day',
-                                style: TextStyle(
-                                  fontWeight:
-                                      isSelected ||
-                                          day == 5 ||
-                                          day == 12 ||
-                                          day == 19 ||
-                                          day == 26
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedDay = day;
+                                  // Si pinchamos en un día del mes actual, nos cercioramos de que sea el mes en foco.
+                                  if (monthToRender != _focusedMonth) {
+                                     _pageController.animateToPage(pageIndex, duration: const Duration(milliseconds: 300), curve: Curves.easeInOutCubic);
+                                  }
+                                });
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DetallesDiaPage(
+                                      fecha: date,
+                                      registros: _registrosDelDia(date),
+                                      eventos: _eventosDelDia(date),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppColors.white
-                                      : AppColors.textPrimary,
-                                  fontSize: 16,
+                                      ? AppColors.primaryTealLight
+                                      : (isToday ? AppColors.primaryTealLight.withValues(alpha: 0.05) : Colors.transparent),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: isToday && !isSelected
+                                      ? Border.all(color: AppColors.primaryTealLight.withValues(alpha: 0.5), width: 1.5)
+                                      : Border.all(color: Colors.transparent),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: AppColors.primaryTealLight.withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          )
+                                        ]
+                                      : [],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '$day',
+                                      style: TextStyle(
+                                        fontWeight: isSelected ? FontWeight.bold : (isToday ? FontWeight.bold : FontWeight.w500),
+                                        color: isSelected ? AppColors.white : (isToday ? AppColors.primaryTealLight : AppColors.textPrimary),
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    if (dots.isNotEmpty) SizedBox(height: 4),
+                                    if (dots.isNotEmpty)
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: dots
+                                            .map(
+                                              (color) => Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                                                child: CircleAvatar(
+                                                  radius: 3,
+                                                  backgroundColor: color,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                      ),
+                                  ],
                                 ),
                               ),
-                              if (dots.isNotEmpty) SizedBox(height: 6),
-                              if (dots.isNotEmpty)
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: dots
-                                      .map(
-                                        (color) => Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 2.0,
-                                          ),
-                                          child: CircleAvatar(
-                                            radius: 2.5,
-                                            backgroundColor: color,
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                            );
+                          },
+                        );
+                      }
+                    ),
                   ),
                 ],
               ),
             ),
             SizedBox(height: 20),
 
-            // Legend
-            _LeyendaItem(color: AppColors.successGreen, label: 'Asistencia'),
-            _LeyendaItem(color: AppColors.warningOrange, label: 'Incidencia'),
-            _LeyendaItem(color: AppColors.dangerRed, label: 'Ausencia'),
-            _LeyendaItem(color: AppColors.primaryTealLight, label: 'Reunión'),
-
-            SizedBox(height: 24),
-            Text(
-              'Resumen Mensual',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+            Center(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 10,
+                alignment: WrapAlignment.center,
+                children: [
+                  _LeyendaItem(color: AppColors.successGreen, label: 'Asistencia'),
+                  _LeyendaItem(color: AppColors.dangerRed, label: 'Ausencia'),
+                  _LeyendaItem(color: AppColors.warningOrange, label: 'Incidencia'),
+                  _LeyendaItem(color: AppColors.primaryTealLight, label: 'Reunión'),
+                ],
               ),
             ),
-            SizedBox(height: 12),
+
+            SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Resumen Mensual',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Icon(
+                  Icons.insert_chart_outlined_rounded,
+                  color: AppColors.textSecondary.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(16),
+                    padding: EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: AppColors.primaryTealLight.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // We use a small container with background color for the icon to match design feel
                         Container(
-                          padding: EdgeInsets.all(8),
+                          padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryTeal.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.successGreen.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
-                            Icons.check_circle_outline,
-                            color: AppColors.primaryTeal,
-                            size: 24,
+                            Icons.how_to_reg_rounded,
+                            color: AppColors.successGreen,
+                            size: 26,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(height: 16),
                         Text(
-                          '16',
+                          _asistenciasMes().toString(),
                           style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                            height: 1.0,
+                            fontWeight: FontWeight.w900,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 6),
                         Text(
                           'Asistencias',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1899,12 +2215,12 @@ class CalendarioPage extends StatelessWidget {
                     padding: EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: AppColors.warningOrange.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
@@ -1912,32 +2228,34 @@ class CalendarioPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          padding: EdgeInsets.all(8),
+                          padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryTeal.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
+                            color: AppColors.warningOrange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
-                            Icons.warning_amber_rounded,
-                            color: AppColors.primaryTeal,
-                            size: 24,
+                            Icons.error_outline_rounded,
+                            color: AppColors.warningOrange,
+                            size: 26,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        SizedBox(height: 16),
                         Text(
-                          '2',
+                          _incidenciasMes().toString(),
                           style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                            height: 1.0,
+                            fontWeight: FontWeight.w900,
                             color: AppColors.textPrimary,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        SizedBox(height: 6),
                         Text(
                           'Incidencias',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1961,18 +2279,24 @@ class _LeyendaItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(radius: 6, backgroundColor: color),
-          SizedBox(width: 12),
+          CircleAvatar(radius: 4, backgroundColor: color),
+          SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1982,19 +2306,27 @@ class _LeyendaItem extends StatelessWidget {
 }
 
 class DetallesDiaPage extends StatelessWidget {
-  final int dia;
-  final int mes;
-  final int anio;
+  final DateTime fecha;
+  final List<RegistroHorario> registros;
+  final List<CalendarioEventoRemote> eventos;
 
   const DetallesDiaPage({
     super.key,
-    required this.dia,
-    required this.mes,
-    required this.anio,
+    required this.fecha,
+    required this.registros,
+    required this.eventos,
   });
+
+  String _hora(DateTime date) => DateFormat('HH:mm').format(date);
 
   @override
   Widget build(BuildContext context) {
+    final fechaLabel = DateFormat('d MMMM yyyy', 'es_ES').format(fecha);
+    final registrosOrdenados = [...registros]
+      ..sort((a, b) => a.fecha.compareTo(b.fecha));
+    final eventosOrdenados = [...eventos]
+      ..sort((a, b) => a.fecha.compareTo(b.fecha));
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -2005,10 +2337,10 @@ class DetallesDiaPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Detalles del $dia/$mes/$anio',
+          'Detalles del $fechaLabel',
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -2017,55 +2349,151 @@ class DetallesDiaPage extends StatelessWidget {
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          children: [
-            _TimelineEventRow(
-              time: '10:30',
-              period: 'AM',
-              duration: '30m',
-              card: _TimelineCard(
-                title: 'Daily Meeting',
-                icon: Icons.people_alt_outlined,
-                color: AppColors.primaryTealLight,
+        child: registrosOrdenados.isEmpty && eventosOrdenados.isEmpty
+            ? Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.event_busy, size: 48, color: AppColors.border),
+                    SizedBox(height: 12),
+                    Text(
+                      'Sin registros',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'No hay movimientos registrados en este día.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (registrosOrdenados.isNotEmpty)
+                    Column(
+                      children: List.generate(registrosOrdenados.length, (index) {
+                        final registro = registrosOrdenados[index];
+                        final esEntrada = registro.tipo == TipoRegistro.entrada;
+                        return _TimelineEventRow(
+                          time: _hora(registro.fecha),
+                          period: registro.fecha.hour >= 12 ? 'PM' : 'AM',
+                          duration: '',
+                          isLast: index == registrosOrdenados.length - 1,
+                          card: _TimelineCard(
+                            title: esEntrada ? 'Entrada' : 'Salida',
+                            icon: esEntrada ? Icons.login_outlined : Icons.logout_outlined,
+                            iconQuarter: esEntrada ? 0 : 2,
+                            color: esEntrada ? AppColors.successGreen : AppColors.warningOrange,
+                          ),
+                        );
+                      }),
+                    ),
+                  if (eventosOrdenados.isNotEmpty) ...[
+                    if (registrosOrdenados.isNotEmpty) SizedBox(height: 12),
+                    Text(
+                      'Eventos',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    ...eventosOrdenados.map(
+                      (evento) => Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: _eventColor(evento.tipo).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                _eventIcon(evento.tipo),
+                                color: _eventColor(evento.tipo),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    evento.titulo,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  if ((evento.descripcion ?? '').isNotEmpty)
+                                    Text(
+                                      evento.descripcion!,
+                                      style: TextStyle(color: AppColors.textSecondary),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              evento.tipo,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            _TimelineEventRow(
-              time: '01:00',
-              period: 'PM',
-              duration: '60m',
-              card: _TimelineCard(
-                title: 'Almuerzo',
-                icon: Icons.coffee_outlined,
-                color: AppColors.warningOrange,
-              ),
-            ),
-            _TimelineEventRow(
-              time: '04:00',
-              period: 'PM',
-              duration: '90m',
-              card: _TimelineCard(
-                title: 'Revisión Profunda',
-                icon: Icons.business_center_outlined,
-                color: AppColors.accentSky,
-                badgeText: 'Actividad principal del bloque',
-              ),
-            ),
-            _TimelineEventRow(
-              time: '06:05',
-              period: 'PM',
-              duration: '',
-              isLast: true,
-              card: _TimelineCard(
-                title: 'Salida',
-                icon: Icons.login_outlined,
-                iconQuarter: 2,
-                color: AppColors.dangerRed,
-              ),
-            ),
-          ],
-        ),
       ),
     );
+  }
+
+  Color _eventColor(String tipo) {
+    switch (tipo) {
+      case 'incidencia':
+        return AppColors.warningOrange;
+      case 'ausencia':
+        return AppColors.dangerRed;
+      case 'reunion':
+        return AppColors.primaryTealLight;
+      default:
+        return AppColors.successGreen;
+    }
+  }
+
+  IconData _eventIcon(String tipo) {
+    switch (tipo) {
+      case 'incidencia':
+        return Icons.warning_amber_rounded;
+      case 'ausencia':
+        return Icons.event_busy;
+      case 'reunion':
+        return Icons.people_alt_outlined;
+      default:
+        return Icons.check_circle_outline;
+    }
   }
 }
 

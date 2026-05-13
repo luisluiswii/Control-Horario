@@ -8,5 +8,7 @@
     "files.exclude": {
         "**/.dart_tool": true,
         "**/.flutter-plugins-dependencies": true
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/luis/Control-Horario-UI_Luis_01/windows",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

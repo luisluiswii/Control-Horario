@@ -35,9 +35,20 @@ create table if not exists public.turnos (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.calendario_eventos (
+  id uuid primary key default gen_random_uuid(),
+  usuario_id uuid not null references auth.users (id) on delete cascade,
+  tipo text not null check (tipo in ('asistencia', 'incidencia', 'ausencia', 'reunion')),
+  titulo text not null,
+  descripcion text,
+  fecha date not null,
+  created_at timestamptz not null default now()
+);
+
 alter table public.usuario enable row level security;
 alter table public.fichajes enable row level security;
 alter table public.turnos enable row level security;
+alter table public.calendario_eventos enable row level security;
 
 create or replace function public.is_admin()
 returns boolean
@@ -84,3 +95,24 @@ on public.turnos
 for all
 using (public.is_admin())
 with check (public.is_admin());
+
+create policy "calendario_eventos_select_own_or_admin"
+on public.calendario_eventos
+for select
+using (usuario_id = auth.uid() or public.is_admin());
+
+create policy "calendario_eventos_insert_own_or_admin"
+on public.calendario_eventos
+for insert
+with check (usuario_id = auth.uid() or public.is_admin());
+
+create policy "calendario_eventos_update_own_or_admin"
+on public.calendario_eventos
+for update
+using (usuario_id = auth.uid() or public.is_admin())
+with check (usuario_id = auth.uid() or public.is_admin());
+
+create policy "calendario_eventos_delete_own_or_admin"
+on public.calendario_eventos
+for delete
+using (usuario_id = auth.uid() or public.is_admin());

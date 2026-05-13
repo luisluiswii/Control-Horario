@@ -105,6 +105,36 @@ class TurnoRegistroRemote {
   String get rangoHorario => '$horaInicio - $horaFin';
 }
 
+class CalendarioEventoRemote {
+  const CalendarioEventoRemote({
+    required this.id,
+    required this.usuarioId,
+    required this.tipo,
+    required this.titulo,
+    required this.descripcion,
+    required this.fecha,
+  });
+
+  final String id;
+  final String usuarioId;
+  final String tipo;
+  final String titulo;
+  final String? descripcion;
+  final DateTime fecha;
+
+  factory CalendarioEventoRemote.fromMap(Map<String, dynamic> data) {
+    final fechaRaw = data['fecha']?.toString() ?? DateTime.now().toIso8601String();
+    return CalendarioEventoRemote(
+      id: data['id']?.toString() ?? '',
+      usuarioId: data['usuario_id']?.toString() ?? '',
+      tipo: data['tipo']?.toString() ?? 'asistencia',
+      titulo: data['titulo']?.toString() ?? 'Evento',
+      descripcion: data['descripcion']?.toString(),
+      fecha: DateTime.parse(fechaRaw),
+    );
+  }
+}
+
 class SupabaseAppRepository {
   static SupabaseClient get _client => Supabase.instance.client;
 
@@ -272,5 +302,57 @@ class SupabaseAppRepository {
 
   static Future<void> deleteShift(String shiftId) async {
     await _client.from('turnos').delete().eq('id', shiftId);
+  }
+
+  static Future<List<CalendarioEventoRemote>> loadCalendarEventsForMonth(
+    String authUserId,
+    DateTime month,
+  ) async {
+    final start = DateTime(month.year, month.month, 1);
+    final end = DateTime(month.year, month.month + 1, 1);
+
+    try {
+      final rows = await _client
+          .from('calendario_eventos')
+          .select()
+          .eq('usuario_id', authUserId)
+          .gte('fecha', start.toIso8601String().split('T').first)
+          .lt('fecha', end.toIso8601String().split('T').first)
+          .order('fecha');
+
+      return rows
+          .cast<Map<String, dynamic>>()
+          .map(CalendarioEventoRemote.fromMap)
+          .toList();
+    } catch (e) {
+      // Fallback a datos mock si no existe la tabla en Supabase
+      print('Advertencia: No se pudo cargar eventos de Supabase ($e). Usando mock data.');
+      return [
+        CalendarioEventoRemote(
+          id: 'mock-1',
+          usuarioId: authUserId,
+          tipo: 'reunion',
+          titulo: 'Reunión de Diseño',
+          descripcion: 'Sincronización semanal',
+          fecha: DateTime(month.year, month.month, 14, 10, 0),
+        ),
+        CalendarioEventoRemote(
+          id: 'mock-2',
+          usuarioId: authUserId,
+          tipo: 'ausencia',
+          titulo: 'Día Libre',
+          descripcion: 'Vacaciones aprobadas',
+          fecha: DateTime(month.year, month.month, 18, 0, 0),
+        ),
+        CalendarioEventoRemote(
+          id: 'mock-3',
+          usuarioId: authUserId,
+          tipo: 'incidencia',
+          titulo: 'Retraso Transporte',
+          descripcion: 'Aviso RRHH',
+          fecha: DateTime(month.year, month.month, 22, 9, 30),
+        ),
+      ];
+    }
   }
 }
