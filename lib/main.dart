@@ -314,22 +314,15 @@ class _SplashPageState extends State<SplashPage>
 
     _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
       if (!mounted) return;
-      // [peluquería] Navegación original (siempre LoginPage) conservada como
-      // comentario:
-      //
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (_) => const LoginPage()),
-      // );
-      //
-      // Nueva versión: si el usuario marcó "Mantener sesión iniciada" en su
-      // último login, saltamos LoginPage y vamos directos al panel. Si no
-      // hay sesión activa, el comportamiento es idéntico al original.
-      final hasSession = AuthSession().isActive();
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => hasSession ? const HomeShellPage() : const LoginPage(),
-        ),
-      );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final hasSession = AuthSession().isActive();
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => hasSession ? const HomeShellPage() : const LoginPage(),
+          ),
+        );
+      });
     });
   }
 
@@ -981,16 +974,7 @@ class MenuPlaceholderPage extends StatefulWidget {
 class _MenuPlaceholderPageState extends State<MenuPlaceholderPage> {
   @override
   Widget build(BuildContext context) {
-    // ─────────────────────────────────────────────────────────────────────────
-    // PERFIL: PELUQUERÍA (4 PERSONAS)
-    // Se comentan los módulos que no aportan valor en un equipo tan pequeño.
-    // NO BORRAR las líneas comentadas: otras empresas del proyecto (taller,
-    // tercera empresa pendiente) las necesitan, y el repo es plantilla común
-    // para los 3 forks. Para reactivar un módulo en esta rama basta con
-    // descomentar la línea correspondiente, tanto aquí como en
-    // `modules_management_page.dart` (mapas `_activos` y `_iconos`).
-    // Ver `docs/PELUQUERIA.md` para el detalle de la decisión.
-    // ─────────────────────────────────────────────────────────────────────────
+
     final List<Map<String, dynamic>> menuItems = [
       // {'title': 'Vacaciones', 'icon': Icons.flight_takeoff, 'color': AppColors.accentCoral},
       // {'title': 'Nóminas', 'icon': Icons.account_balance_wallet, 'color': AppColors.successGreen},
@@ -1880,9 +1864,6 @@ class _PerfilPageState extends State<PerfilPage> {
                   //   Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
                   // },
                   onTap: () async {
-                    // [peluquería] Limpiamos la sesión persistida antes de
-                    // volver al login, si no el próximo arranque saltaría el
-                    // login de nuevo aunque el usuario haya cerrado sesión.
                     await AuthSession().clear();
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary));

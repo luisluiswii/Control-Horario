@@ -13,34 +13,9 @@ class DocumentosPage extends StatefulWidget {
 
 class DocumentosPageState extends State<DocumentosPage> {
 
-  List<Map<String, String>> documentos = [
-    /*
-    {
-      'titulo': 'Manual de Empleado',
-      'fecha': '10/03/2026',
-      'tipo': 'PDF',
-      'categoria': 'Empresa',
-    },
-    {
-      'titulo': 'Política de Vacaciones',
-      'fecha': '05/01/2026',
-      'tipo': 'PDF',
-      'categoria': 'Empresa',
-    },
-    {
-      'titulo': 'Contrato Firmado',
-      'fecha': '12/10/2025',
-      'tipo': 'DOCX',
-      'categoria': 'Personales',
-    },
-    {
-      'titulo': 'Justificante Médico',
-      'fecha': '15/03/2026',
-      'tipo': 'JPG',
-      'categoria': 'Personales',
-    },
-    */
-  ];
+  List<Map<String, String>> documentos = [];
+  final TextEditingController _busquedaController = TextEditingController();
+  String _query = "";
 
   @override
   void initState() {
@@ -56,6 +31,8 @@ class DocumentosPageState extends State<DocumentosPage> {
     final files = Directory(dir.path).listSync();
 
     final pdfs = files.where((f) => f.path.endsWith('.pdf')).toList();
+
+    documentos.clear();
 
     for (var file in pdfs) {
       final name = file.path.split('/').last.replaceAll('.pdf', '');
@@ -95,7 +72,7 @@ class DocumentosPageState extends State<DocumentosPage> {
   }
 
   // ---------------------------------------------------------
-  // CONFIRMAR BORRADO
+  // CONFIRMAR BORRADO INDIVIDUAL
   // ---------------------------------------------------------
   Future<bool> _confirmarBorrado() async {
     final confirmar = await showDialog<bool>(
@@ -119,7 +96,7 @@ class DocumentosPageState extends State<DocumentosPage> {
   }
 
   // ---------------------------------------------------------
-  // BORRAR DOCUMENTO
+  // BORRAR DOCUMENTO INDIVIDUAL
   // ---------------------------------------------------------
   Future<void> _borrarDocumento(Map<String, String> doc) async {
     final ok = await _confirmarBorrado();
@@ -179,6 +156,63 @@ class DocumentosPageState extends State<DocumentosPage> {
   }
 
   // ---------------------------------------------------------
+  // CONFIRMAR BORRADO MASIVO
+  // ---------------------------------------------------------
+  Future<void> _eliminarTodosLosDocumentos() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Eliminar todos los documentos"),
+        content: const Text("¿Seguro que quieres eliminar TODOS los PDFs guardados?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Eliminar todo", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _borrarTodosLosPDF();
+    }
+  }
+
+  // ---------------------------------------------------------
+  // BORRAR TODOS LOS PDFs
+  // ---------------------------------------------------------
+  Future<void> _borrarTodosLosPDF() async {
+    final dir = await getApplicationDocumentsDirectory();
+    final files = Directory(dir.path).listSync();
+
+    for (var file in files) {
+      if (file is File && file.path.endsWith(".pdf")) {
+        await file.delete();
+      }
+    }
+
+    documentos.clear();
+
+    if (mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("Todos los documentos han sido eliminados"),
+          duration: Duration(milliseconds: 1500),
+          behavior: SnackBarBehavior.fixed,
+        ),
+      );
+    }
+
+    setState(() {});
+  }
+
+  // ---------------------------------------------------------
   // UI
   // ---------------------------------------------------------
   @override
@@ -194,14 +228,42 @@ class DocumentosPageState extends State<DocumentosPage> {
           ),
           backgroundColor: AppColors.primaryTeal,
           foregroundColor: AppColors.white,
-          bottom: TabBar(
-            labelColor: AppColors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: AppColors.accentSky,
-            tabs: const [
-              Tab(text: 'Mi Repositorio'),
-              // Tab(text: 'Normativa Empresa'),
-            ],
+          actions: [
+            IconButton(
+              tooltip: "Eliminar todos los documentos",
+              onPressed: documentos.isEmpty ? null : _eliminarTodosLosDocumentos,
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_forever, color: Colors.red),
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: TextField(
+                controller: _busquedaController,
+                onChanged: (value) {
+                  setState(() => _query = value.trim().toLowerCase());
+                },
+                decoration: InputDecoration(
+                  hintText: "Buscar documento...",
+                  filled: true,
+                  fillColor: Colors.white,
+                  prefixIcon: const Icon(Icons.search),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
         body: TabBarView(
@@ -215,11 +277,15 @@ class DocumentosPageState extends State<DocumentosPage> {
   }
 
   // ---------------------------------------------------------
-  // LISTA DE DOCUMENTOS
+  // LISTA DE DOCUMENTOS + BÚSQUEDA
   // ---------------------------------------------------------
   Widget _buildListaDocumentos(String categoria) {
-    final filtrados =
-    documentos.where((doc) => doc['categoria'] == categoria).toList();
+    final filtrados = documentos.where((doc) {
+      final coincideCategoria = doc['categoria'] == categoria;
+      final coincideBusqueda = _query.isEmpty ||
+          doc['titulo']!.toLowerCase().contains(_query);
+      return coincideCategoria && coincideBusqueda;
+    }).toList();
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
@@ -263,13 +329,10 @@ class DocumentosPageState extends State<DocumentosPage> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Editar nombre
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.green),
                   onPressed: () => _renombrarDocumento(doc),
                 ),
-
-                // Borrar con confirmación
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _borrarDocumento(doc),
