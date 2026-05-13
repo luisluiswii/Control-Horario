@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter/gestures.dart';
 import 'gestion_page.dart';
+import 'cambiar_turno_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -809,6 +810,13 @@ class MenuPlaceholderPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => GestionPage(),
+                            ),
+                          );
+                        } else if (item['icon'] == Icons.swap_horiz) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CambiarTurnoPage(),
                             ),
                           );
                         }
