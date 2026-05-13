@@ -159,6 +159,7 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
         SnackBar(
           content: const Text("PDF guardado en Documentos"),
           duration: const Duration(seconds: 3),
+          showCloseIcon: true,
           action: SnackBarAction(
             label: "Ver",
             onPressed: () {
