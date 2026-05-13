@@ -155,13 +155,16 @@ class _HistorialFichajesScreenState extends State<HistorialFichajesScreen> {
     await guardarPDFLocal(bytes, nombre);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text("PDF guardado en Documentos"),
           duration: const Duration(milliseconds: 1500),
           action: SnackBarAction(
             label: "Ver",
             onPressed: () {
+              messenger.hideCurrentSnackBar();
               Navigator.pushNamed(context, "/documentos");
             },
           ),
