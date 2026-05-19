@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'main.dart';
 
 class CambiarTurnoPage extends StatefulWidget {
@@ -24,6 +25,10 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
   List<Map<String, dynamic>> solicitudesEnviadas = [];
   List<Map<String, dynamic>> solicitudesRecibidas = [];
   bool cargandoSolicitudes = true;
+
+  // --- NOTIFICACIÓN SIMPLE ---
+  String? ultimoIdVisto;
+  bool tieneNotificacion = false;
 
   @override
   void initState() {
@@ -78,8 +83,7 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
       final data = await _client
           .from('solicitudes_cambio_turno')
           .select(
-        'id, solicitante_id, companero_id, fecha_turno, motivo, estado, fecha_solicitud, fecha_respuesta',
-      )
+          'id, solicitante_id, companero_id, fecha_turno, motivo, estado, fecha_solicitud, fecha_respuesta')
           .or('solicitante_id.eq.${user.id},companero_id.eq.${user.id}')
           .order('fecha_solicitud', ascending: false);
 
@@ -122,6 +126,16 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
         if (s['solicitante_id'] == user.id) enviadas.add(enriched);
         if (s['companero_id'] == user.id) recibidas.add(enriched);
       }
+
+      // --- NOTIFICACIÓN SOLO PARA RECIBIDAS ---
+      final prefs = await SharedPreferences.getInstance();
+      ultimoIdVisto = prefs.getString('ultimo_id_visto');
+
+      String? ultimoIdActual =
+      recibidas.isNotEmpty ? recibidas.first['id'] : null;
+
+      tieneNotificacion =
+      (ultimoIdActual != null && ultimoIdActual != ultimoIdVisto);
 
       setState(() {
         solicitudesEnviadas = enviadas;
@@ -239,39 +253,76 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: const Text(
-            'Cambiar Turno',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          backgroundColor: AppColors.primaryTeal,
-          foregroundColor: AppColors.white,
-          elevation: 0,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: cargarSolicitudes,
+      child: Builder(builder: (context) {
+        final TabController controller = DefaultTabController.of(context);
+
+        controller.addListener(() async {
+          if (controller.index == 1) {
+            // Al entrar → marcar como visto
+            if (solicitudesRecibidas.isNotEmpty) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString(
+                  'ultimo_id_visto', solicitudesRecibidas.first['id']);
+            }
+
+            if (mounted) {
+              setState(() => tieneNotificacion = false);
+            }
+          }
+        });
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            title: const Text(
+              'Cambiar Turno',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
-          ],
-          bottom: TabBar(
-            indicatorColor: AppColors.accentSky,
-            labelColor: AppColors.white,
-            unselectedLabelColor: AppColors.white.withValues(alpha: 0.6),
-            tabs: const [
-              Tab(text: 'Nueva Solicitud'),
-              Tab(text: 'Mis Solicitudes'),
+            backgroundColor: AppColors.primaryTeal,
+            foregroundColor: AppColors.white,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: cargarSolicitudes,
+              ),
+            ],
+            bottom: TabBar(
+              indicatorColor: AppColors.accentSky,
+              labelColor: AppColors.white,
+              unselectedLabelColor: AppColors.white.withValues(alpha: 0.6),
+              tabs: [
+                const Tab(text: 'Nueva Solicitud'),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('Mis Solicitudes'),
+                      if (tieneNotificacion) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              _buildFormulario(),
+              _buildMisSolicitudes(),
             ],
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _buildFormulario(),
-            _buildMisSolicitudes(),
-          ],
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -513,136 +564,136 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
     final puedeAceptarRechazar = esCompanero && estado == 'pendiente';
 
     return Card(
-      color: AppColors.surface,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        color: AppColors.surface,
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    titulo,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: estadoColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    estadoTexto,
-                    style: TextStyle(
-                      color: estadoColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
+          Expanded(
+          child: Text(
+            titulo,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Día del turno: '
-                  '${fechaTurno.day.toString().padLeft(2, '0')}/'
-                  '${fechaTurno.month.toString().padLeft(2, '0')}/'
-                  '${fechaTurno.year}',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+          ),
+        ),
+        Container(
+            padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: estadoColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 2),
-            Text(
-              'Solicitada el: '
-                  '${fechaSolicitud.day.toString().padLeft(2, '0')}/'
-                  '${fechaSolicitud.month.toString().padLeft(2, '0')}/'
-                  '${fechaSolicitud.year} '
-                  '${fechaSolicitud.hour.toString().padLeft(2, '0')}:'
-                  '${fechaSolicitud.minute.toString().padLeft(2, '0')}',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+          child: Text(
+            estadoTexto,
+            style: TextStyle(
+              color: estadoColor,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
-            if (motivo != null && motivo.trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
+          ),
+        ),
+          ],
+          ),
+              const SizedBox(height: 6),
               Text(
-                'Motivo:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                motivo,
+                'Día del turno: '
+                    '${fechaTurno.day.toString().padLeft(2, '0')}/'
+                    '${fechaTurno.month.toString().padLeft(2, '0')}/'
+                    '${fechaTurno.year}',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 13,
                 ),
               ),
-            ],
-            const SizedBox(height: 8),
-            if (puedeCancelar || puedeAceptarRechazar)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (puedeCancelar)
-                    TextButton.icon(
-                      onPressed: () => _confirmarAccion(
-                        solicitud,
-                        'cancelada',
-                        '¿Seguro que quieres cancelar esta solicitud?',
-                      ),
-                      icon: const Icon(Icons.cancel, size: 18),
-                      label: const Text('Cancelar'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.grey[700],
-                      ),
-                    ),
-                  if (puedeAceptarRechazar) ...[
-                    TextButton.icon(
-                      onPressed: () => _confirmarAccion(
-                        solicitud,
-                        'rechazada',
-                        '¿Seguro que quieres rechazar esta solicitud?',
-                      ),
-                      icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Rechazar'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    TextButton.icon(
-                      onPressed: () => _confirmarAccion(
-                        solicitud,
-                        'aceptada',
-                        '¿Seguro que quieres aceptar esta solicitud?',
-                      ),
-                      icon: const Icon(Icons.check, size: 18),
-                      label: const Text('Aceptar'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.green,
-                      ),
-                    ),
-                  ],
-                ],
+              const SizedBox(height: 2),
+              Text(
+                'Solicitada el: '
+                    '${fechaSolicitud.day.toString().padLeft(2, '0')}/'
+                    '${fechaSolicitud.month.toString().padLeft(2, '0')}/'
+                    '${fechaSolicitud.year} '
+                    '${fechaSolicitud.hour.toString().padLeft(2, '0')}:'
+                    '${fechaSolicitud.minute.toString().padLeft(2, '0')}',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
               ),
-          ],
+              if (motivo != null && motivo.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Motivo:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  motivo,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              if (puedeCancelar || puedeAceptarRechazar)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (puedeCancelar)
+                      TextButton.icon(
+                        onPressed: () => _confirmarAccion(
+                          solicitud,
+                          'cancelada',
+                          '¿Seguro que quieres cancelar esta solicitud?',
+                        ),
+                        icon: const Icon(Icons.cancel, size: 18),
+                        label: const Text('Cancelar'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.grey[700],
+                        ),
+                      ),
+                    if (puedeAceptarRechazar) ...[
+                      TextButton.icon(
+                        onPressed: () => _confirmarAccion(
+                          solicitud,
+                          'rechazada',
+                          '¿Seguro que quieres rechazar esta solicitud?',
+                        ),
+                        icon: const Icon(Icons.close, size: 18),
+                        label: const Text('Rechazar'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      TextButton.icon(
+                        onPressed: () => _confirmarAccion(
+                          solicitud,
+                          'aceptada',
+                          '¿Seguro que quieres aceptar esta solicitud?',
+                        ),
+                        icon: const Icon(Icons.check, size: 18),
+                        label: const Text('Aceptar'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+            ],
+          ),
         ),
-      ),
     );
   }
 
@@ -674,3 +725,4 @@ class _CambiarTurnoPageState extends State<CambiarTurnoPage> {
     }
   }
 }
+
