@@ -408,7 +408,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // [peluquería] Si quedó un correo guardado de una sesión anterior con
+    // Si quedó un correo guardado de una sesión anterior con
     // "Mantener sesión iniciada", lo precargamos en el campo para no obligar
     // al usuario a teclearlo de nuevo.
     final savedEmail = AuthSession().savedEmail;
@@ -435,7 +435,7 @@ class _LoginPageState extends State<LoginPage> {
   //   );
   // }
 
-  // ⭐ Versión nueva: login real con Supabase + tu sistema de sesión
+  // login real con Supabase + tu sistema de sesión
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -506,13 +506,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// [peluquería] Diálogo de recuperación de contraseña.
-  ///
-  /// Como este branch no tiene aún backend real (la rama `JuanR-Pablo` añade
-  /// Supabase pero no está mergeada en peluquería), el flujo simula el envío
-  /// validando el correo y mostrando el aviso estándar de "si existe, te
-  /// llegará un correo". Cuando se integre Supabase, sustituir
-  /// `_simulateSendRecovery` por `Supabase.instance.client.auth.resetPasswordForEmail`.
   Future<void> _showForgotPasswordDialog() async {
     final dialogFormKey = GlobalKey<FormState>();
     final dialogEmailController = TextEditingController(
@@ -984,7 +977,7 @@ class _MenuPlaceholderPageState extends State<MenuPlaceholderPage> {
       {'title': 'Documentos', 'icon': Icons.description_outlined, 'color': AppColors.primaryTealLight},
       // {'title': 'Encuesta 360°', 'icon': Icons.view_in_ar_outlined, 'color': AppColors.warningOrange}, // [peluquería] evaluación corporativa, no aplica
       // {'title': 'Gestión', 'icon': Icons.settings_outlined, 'color': AppColors.primaryTeal},
-      // {'title': 'Cambiar turno', 'icon': Icons.swap_horiz, 'color': AppColors.primaryTealLight},
+      {'title': 'Cambiar turno', 'icon': Icons.swap_horiz, 'color': AppColors.primaryTealLight},
       {'title': 'Trabajadores', 'icon': Icons.people_outline, 'color': AppColors.successGreen},
       // {'title': 'Cursos', 'icon': Icons.school_outlined, 'color': AppColors.primaryTealLight}, // [peluquería] formación interna corporativa, no aplica
       // {'title': 'Asistencias', 'icon': Icons.headset_mic_outlined, 'color': AppColors.dangerRed}, // [peluquería] resolución formal de faltas, lo cubre Vacaciones

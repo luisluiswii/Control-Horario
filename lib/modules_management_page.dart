@@ -8,28 +8,20 @@ class ModulesManager {
   factory ModulesManager() => _instance;
   ModulesManager._internal();
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // PERFIL: PELUQUERÍA (4 PERSONAS)
-  // Mantener este mapa sincronizado con `menuItems` de `main.dart`. Los
-  // módulos comentados aquí se ocultan también del panel "Gestionar módulos"
-  // para no confundir al administrador con opciones que no aplican.
-  // NO BORRAR las líneas comentadas: las otras empresas del proyecto las
-  // necesitan. Ver `docs/PELUQUERIA.md`.
-  // ───────────────────────────────────────────────────────────────────────────
   final Map<String, bool> _activos = {
     'Vacaciones': true,
     'Nóminas': true,
-    // 'Aprobaciones': true, // [peluquería] desactivado
+    // 'Aprobaciones': true,
     'Tablón': true,
     'Añadir tareas': true,
     'Documentos': true,
-    // 'Encuesta 360°': true, // [peluquería] desactivado
+    // 'Encuesta 360°': true,
     'Gestión': true,
     'Cambiar turno': true,
     'Trabajadores': true,
-    // 'Cursos': true, // [peluquería] desactivado
-    // 'Asistencias': true, // [peluquería] desactivado
-    // 'Asistencia App': true, // [peluquería] desactivado
+    // 'Cursos': true,
+    // 'Asistencias': true,
+    // 'Asistencia App': true,
     'Quejas': true,
   };
 
