@@ -1726,6 +1726,34 @@ class _PerfilPageState extends State<PerfilPage> {
   bool _notificaciones = true;
   bool _resumenDiario = false;
 
+  String? nombreCompleto;
+  String? email;
+
+  @override
+  void initState() {
+    super.initState();
+    cargarPerfil();
+  }
+
+  SupabaseClient get _client => Supabase.instance.client;
+
+  Future<void> cargarPerfil() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return;
+
+    email = user.email;
+
+    final data = await _client
+        .from('usuario')
+        .select('nombre_completo')
+        .eq('auth_user_id', user.id)
+        .maybeSingle();
+
+    setState(() {
+      nombreCompleto = data?['nombre_completo'] ?? 'Usuario';
+    });
+  }
+
   void _mostrarSelectorTemas(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -1733,7 +1761,10 @@ class _PerfilPageState extends State<PerfilPage> {
       backgroundColor: Colors.transparent,
       builder: (BuildContext ctx) {
         return Container(
-          decoration: BoxDecoration(color: AppColors.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
           child: SafeArea(
             child: Padding(
@@ -1742,24 +1773,26 @@ class _PerfilPageState extends State<PerfilPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('Selecciona un Tema', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                  Text('Selecciona un Tema',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   SizedBox(height: 24),
                   Flexible(
                     child: SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(
-                        children: [
-                          const _OpcionTema(titulo: 'Océano (Predeterminado)', codigoColor: Color(0xFF0284C7), index: 0),
+                        children: const [
+                          _OpcionTema(titulo: 'Océano (Predeterminado)', codigoColor: Color(0xFF0284C7), index: 0),
                           SizedBox(height: 8),
-                          const _OpcionTema(titulo: 'Bosque (Verde Ecológico)', codigoColor: Color(0xFF059669), index: 2),
+                          _OpcionTema(titulo: 'Bosque (Verde Ecológico)', codigoColor: Color(0xFF059669), index: 2),
                           SizedBox(height: 8),
-                          const _OpcionTema(titulo: 'Modo Oscuro (Clásico)', codigoColor: Color(0xFF1E293B), index: 3),
+                          _OpcionTema(titulo: 'Modo Oscuro (Clásico)', codigoColor: Color(0xFF1E293B), index: 3),
                           SizedBox(height: 8),
-                          const _OpcionTema(titulo: 'Atardecer (Naranja Cálido)', codigoColor: Color(0xFFEA580C), index: 4),
+                          _OpcionTema(titulo: 'Atardecer (Naranja Cálido)', codigoColor: Color(0xFFEA580C), index: 4),
                           SizedBox(height: 8),
-                          const _OpcionTema(titulo: 'Lavanda (Morado Elegante)', codigoColor: Color(0xFF9333EA), index: 5),
+                          _OpcionTema(titulo: 'Lavanda (Morado Elegante)', codigoColor: Color(0xFF9333EA), index: 5),
                           SizedBox(height: 8),
-                          const _OpcionTema(titulo: 'Medianoche (Azul Profundo)', codigoColor: Color(0xFF38BDF8), index: 6),
+                          _OpcionTema(titulo: 'Medianoche (Azul Profundo)', codigoColor: Color(0xFF38BDF8), index: 6),
                         ],
                       ),
                     ),
@@ -1784,54 +1817,102 @@ class _PerfilPageState extends State<PerfilPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // ============================
+              //   PERFIL REAL
+              // ============================
               Container(
                 padding: EdgeInsets.all(24),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
                 child: Row(
                   children: [
-                    Container(width: 64, height: 64, decoration: BoxDecoration(color: AppColors.primaryTeal.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(Icons.person_outline, size: 32, color: AppColors.primaryTeal)),
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryTeal.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.person_outline, size: 32, color: AppColors.primaryTeal),
+                    ),
                     SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Usuario de prácticas', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textPrimary)),
+                          Text(
+                            nombreCompleto ?? 'Cargando...',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textPrimary),
+                          ),
                           SizedBox(height: 6),
-                          Text('control.horario@empresa.com', style: TextStyle(color: AppColors.textSecondary, fontSize: 14), overflow: TextOverflow.ellipsis),
+                          Text(
+                            email ?? '',
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
+
               SizedBox(height: 24),
               Text('Preferencias', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
               SizedBox(height: 16),
+
               Container(
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
                 child: Column(
                   children: [
                     SwitchListTile(
                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       value: _notificaciones,
                       onChanged: (value) => setState(() => _notificaciones = value),
-                      secondary: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.notifications_outlined, size: 24)),
+                      secondary: Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.notifications_outlined, size: 24),
+                      ),
                       title: Text('Notificaciones de fichaje', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                       subtitle: Text('Recibir recordatorios', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ),
+
                     Divider(height: 1, indent: 72, endIndent: 20, color: AppColors.border),
+
+                    // ============================
+                    //   RESUMEN DIARIO (OCULTO)
+                    // ============================
+                    /*
                     SwitchListTile(
                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                       value: _resumenDiario,
                       onChanged: (value) => setState(() => _resumenDiario = value),
-                      secondary: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.summarize_outlined, size: 24)),
+                      secondary: Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.summarize_outlined, size: 24),
+                      ),
                       title: Text('Resumen diario', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                       subtitle: Text('Enviar consolidado al final de jornada', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ),
                     Divider(height: 1, indent: 72, endIndent: 20, color: AppColors.border),
+                    */
+
                     ListTile(
                       contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                      leading: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.palette_outlined, size: 24)),
+                      leading: Container(
+                        padding: EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: AppColors.background, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.palette_outlined, size: 24),
+                      ),
                       title: Text('Tema visual', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                       subtitle: Text('Modifica los colores de la app', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                       trailing: Icon(Icons.chevron_right),
@@ -1840,30 +1921,39 @@ class _PerfilPageState extends State<PerfilPage> {
                   ],
                 ),
               ),
+
               SizedBox(height: 24),
               Text('Sesión', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
               SizedBox(height: 16),
+
               Container(
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(24), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
                 child: ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  leading: Container(padding: EdgeInsets.all(10), decoration: BoxDecoration(color: AppColors.warningOrange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)), child: Icon(Icons.logout, color: AppColors.warningOrange, size: 24)),
+                  leading: Container(
+                    padding: EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: AppColors.warningOrange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(Icons.logout, color: AppColors.warningOrange, size: 24),
+                  ),
                   title: Text('Cerrar sesión', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.warningOrange)),
-                  // [peluquería] onTap original (sin limpiar sesión). Conservado
-                  // como comentario:
-                  //
-                  // onTap: () {
-                  //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary));
-                  //   Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
-                  // },
                   onTap: () async {
                     await AuthSession().clear();
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary));
-                    Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Sesión cerrada correctamente'), backgroundColor: AppColors.textPrimary),
+                    );
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                          (route) => false,
+                    );
                   },
                 ),
               ),
+
               SizedBox(height: 16),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -1871,10 +1961,16 @@ class _PerfilPageState extends State<PerfilPage> {
                   children: [
                     Icon(Icons.info_outline, color: AppColors.textSecondary, size: 16),
                     SizedBox(width: 8),
-                    Expanded(child: Text('Versión base enfocada en control horario puro.', style: TextStyle(color: AppColors.textSecondary, fontSize: 13))),
+                    Expanded(
+                      child: Text(
+                        'Versión base enfocada en control horario puro.',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      ),
+                    ),
                   ],
                 ),
               ),
+
               SizedBox(height: 32),
             ],
           ),
