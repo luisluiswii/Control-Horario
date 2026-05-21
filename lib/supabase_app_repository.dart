@@ -275,4 +275,15 @@ class SupabaseAppRepository {
   static Future<void> deleteShift(String shiftId) async {
     await _client.from('turnos').delete().eq('id', shiftId);
   }
+
+  /// "Borra" un empleado marcándolo como inactivo. La fila se conserva
+  /// (los fichajes y turnos asociados siguen vinculados) pero el usuario
+  /// ya no podrá iniciar sesión: `LoginPage` rechaza cuentas con
+  /// `activo = false`.
+  static Future<void> desactivarEmpleado(String authUserId) async {
+    await _client
+        .from('usuario')
+        .update({'activo': false})
+        .eq('auth_user_id', authUserId);
+  }
 }

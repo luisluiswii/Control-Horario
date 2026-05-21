@@ -55,6 +55,48 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Future<void> _confirmarYBorrar(PerfilUsuario emp) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar trabajador'),
+        content: Text(
+          '¿Seguro que quieres eliminar a "${emp.nombreCompleto.isEmpty ? emp.email : emp.nombreCompleto}"? '
+          'No podrá volver a iniciar sesión.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.dangerRed),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return;
+
+    try {
+      await SupabaseAppRepository.desactivarEmpleado(emp.authUserId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${emp.email} eliminado')),
+      );
+      await _cargarEmpleados();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo eliminar: $e'),
+          backgroundColor: AppColors.dangerRed,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,6 +167,8 @@ class _AdminPageState extends State<AdminPage> {
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final emp = _empleados[index];
+          final esCuentaActual =
+              emp.authUserId == Supabase.instance.client.auth.currentUser?.id;
           return Card(
             child: ListTile(
               leading: CircleAvatar(
@@ -144,6 +188,14 @@ class _AdminPageState extends State<AdminPage> {
                 ' · ${emp.rol}',
               ),
               isThreeLine: true,
+              trailing: esCuentaActual
+                  ? null
+                  : IconButton(
+                      tooltip: 'Eliminar trabajador',
+                      icon: Icon(Icons.delete_outline,
+                          color: AppColors.dangerRed),
+                      onPressed: () => _confirmarYBorrar(emp),
+                    ),
             ),
           );
         },
