@@ -9,8 +9,13 @@ create table if not exists public.usuario (
   identificacion text not null default '',
   rol text not null default 'empleado',
   activo boolean not null default true,
+  must_change_password boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+-- Migración idempotente para instalaciones previas que no incluyan la columna.
+alter table public.usuario
+  add column if not exists must_change_password boolean not null default false;
 
 create table if not exists public.fichajes (
   id uuid primary key default gen_random_uuid(),

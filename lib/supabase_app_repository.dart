@@ -9,6 +9,7 @@ class PerfilUsuario {
     required this.identificacion,
     required this.rol,
     required this.activo,
+    required this.mustChangePassword,
   });
 
   final String authUserId;
@@ -18,6 +19,9 @@ class PerfilUsuario {
   final String identificacion;
   final String rol;
   final bool activo;
+  final bool mustChangePassword;
+
+  bool get esAdmin => rol == 'admin';
 
   factory PerfilUsuario.fromMap(Map<String, dynamic> data) {
     return PerfilUsuario(
@@ -28,6 +32,7 @@ class PerfilUsuario {
       identificacion: data['identificacion']?.toString() ?? '',
       rol: data['rol']?.toString() ?? 'empleado',
       activo: data['activo'] == true,
+      mustChangePassword: data['must_change_password'] == true,
     );
   }
 }
@@ -273,4 +278,67 @@ class SupabaseAppRepository {
   static Future<void> deleteShift(String shiftId) async {
     await _client.from('turnos').delete().eq('id', shiftId);
   }
+
+  /// Invoca la Edge Function `crear-trabajador`. Solo funciona si el usuario
+  /// actualmente autenticado tiene rol `admin`.
+  static Future<void> crearTrabajador({
+    required String email,
+    required String passwordTemporal,
+    required String nombreCompleto,
+    required String departamento,
+    required String identificacion,
+  }) async {
+    final response = await _client.functions.invoke(
+      'crear-trabajador',
+      body: {
+        'email': email,
+        'password': passwordTemporal,
+        'nombre_completo': nombreCompleto,
+        'departamento': departamento,
+        'identificacion': identificacion,
+      },
+    );
+
+    final data = response.data;
+    if (data is Map && data['error'] != null) {
+      throw Exception(data['error']);
+    }
+    if (response.status != null && response.status! >= 400) {
+      throw Exception('Error ${response.status}: ${response.data}');
+    }
+  }
+
+  /// Cambia la contraseña del usuario actual y baja el flag
+  /// `must_change_password` en `public.usuario`.
+  static Future<void> aplicarCambioPasswordInicial(String nuevaPassword) async {
+    final user = _client.auth.currentUser;
+    if (user == null) {
+      throw Exception('No hay sesión activa');
+    }
+
+    await _client.auth.updateUser(UserAttributes(password: nuevaPassword));
+    await _client
+        .from('usuario')
+        .update({'must_change_password': false})
+        .eq('auth_user_id', user.id);
+  }
+}
+
+/// Genera una contraseña temporal con longitud configurable.
+String generarPasswordTemporal({int longitud = 12}) {
+  const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+  const numeros = '23456789';
+  const simbolos = '!@#%&*';
+  final pool = letras + numeros + simbolos;
+  final rng = DateTime.now().microsecondsSinceEpoch;
+  final buffer = StringBuffer();
+  var seed = rng;
+  for (var i = 0; i < longitud; i++) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    buffer.write(pool[seed % pool.length]);
+  }
+  // Garantiza al menos un símbolo y un número.
+  return '${buffer.toString().substring(0, longitud - 2)}'
+      '${numeros[rng % numeros.length]}'
+      '${simbolos[(rng ~/ 7) % simbolos.length]}';
 }
