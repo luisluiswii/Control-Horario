@@ -17,7 +17,7 @@ import 'nominas_page.dart';
 import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
 import 'asistencia_app_page.dart';
-import 'registro_page.dart';
+import 'admin_page.dart';
 import 'supabase_app_repository.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -421,25 +421,26 @@ class _LoginPageState extends State<LoginPage> {
           .maybeSingle();
 
       if (data == null) {
+        await Supabase.instance.client.auth.signOut();
         throw Exception('Tu cuenta no está configurada correctamente');
       }
 
       // 3. Validar si está activo
       if (data['activo'] == false) {
+        await Supabase.instance.client.auth.signOut();
         throw Exception('Tu cuenta está desactivada');
       }
 
-      // 4. Obtener rol
-      final rol = data['rol'];
+      final perfil = PerfilUsuario.fromMap(Map<String, dynamic>.from(data));
 
-      // 5. Navegar según rol
-      if (rol == 'admin') {
-        Navigator.of(context).pushReplacementNamed('/admin');
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeShellPage()),
-        );
-      }
+      // 4. Navegar según rol
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              perfil.esAdmin ? const AdminPage() : const HomeShellPage(),
+        ),
+      );
     }
     catch (e) {
       String mensajeError = 'Ocurrió un error inesperado.';
@@ -620,20 +621,13 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => const RegistroPage(),
-                                  ),
-                                );
-                              },
-                              child: Text(
-                                '¿No tienes cuenta? Regístrate aquí',
-                                style: TextStyle(
-                                  color: AppColors.primaryTealLight,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            Text(
+                              'Solo el administrador puede crear cuentas. '
+                              'Si necesitas acceso, contacta con él.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
                               ),
                             ),
                           ],

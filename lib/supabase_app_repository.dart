@@ -19,6 +19,8 @@ class PerfilUsuario {
   final String rol;
   final bool activo;
 
+  bool get esAdmin => rol == 'admin';
+
   factory PerfilUsuario.fromMap(Map<String, dynamic> data) {
     return PerfilUsuario(
       authUserId: data['auth_user_id']?.toString() ?? '',
@@ -272,5 +274,24 @@ class SupabaseAppRepository {
 
   static Future<void> deleteShift(String shiftId) async {
     await _client.from('turnos').delete().eq('id', shiftId);
+  }
+
+  /// Borra un empleado físicamente: invoca la Edge Function
+  /// `borrar-trabajador`, que con `service_role` elimina la fila de
+  /// `auth.users`. El `on delete cascade` del schema limpia también
+  /// `public.usuario` y `public.fichajes`.
+  static Future<void> borrarEmpleado(String authUserId) async {
+    final response = await _client.functions.invoke(
+      'borrar-trabajador',
+      body: {'auth_user_id': authUserId},
+    );
+
+    final data = response.data;
+    if (data is Map && data['error'] != null) {
+      throw Exception(data['error']);
+    }
+    if (response.status != null && response.status! >= 400) {
+      throw Exception('Error ${response.status}: ${response.data}');
+    }
   }
 }
