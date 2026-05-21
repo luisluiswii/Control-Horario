@@ -1,58 +1,51 @@
 # Backend Supabase — Control Horario
 
-Esta carpeta contiene todo lo necesario para configurar el lado servidor
-de la app: esquema de BBDD, políticas RLS, Edge Function de alta de
-trabajadores y un seed para crear la cuenta de admin inicial.
+Esta carpeta contiene el esquema de la base de datos y un seed con dos
+cuentas de prueba (un administrador y un trabajador) para que el equipo
+pueda probar el flujo de login con los dos roles.
 
 ## Despliegue paso a paso
 
 ### 1. Aplicar el schema
 
-En el proyecto de Supabase, abre el **SQL Editor** y pega el contenido de
-[`schema.sql`](./schema.sql). Ejecuta. Es idempotente (usa `if not exists`),
-por lo que se puede volver a ejecutar tras añadir columnas nuevas.
+Pega [`schema.sql`](./schema.sql) en el **SQL Editor** del proyecto
+Supabase y ejecútalo. Es idempotente (`if not exists`), así que se
+puede volver a ejecutar sin romper nada.
 
-### 2. Crear el primer admin
+### 2. Crear los dos usuarios en Authentication
 
-1. Ve a **Authentication → Users → Add user**.
-2. Introduce email + contraseña. Marca **Auto Confirm User**.
-3. Copia el **UUID** del usuario recién creado.
-4. Abre [`seed_admin.sql`](./seed_admin.sql), sustituye los placeholders
-   (`PEGA_AQUI_EL_UUID...`, email, nombre) y ejecútalo en el SQL Editor.
+En el panel **Authentication → Users → "Add user"** crea estos dos
+(marcando **Auto Confirm User** en ambos para evitar el email de
+confirmación):
 
-A partir de aquí ese usuario ya puede iniciar sesión en la app y verá el
-**Panel de Administración**.
+| Email                          | Contraseña    | Rol      |
+|--------------------------------|---------------|----------|
+| `admin@controlhorario.local`   | `Admin1234!`  | admin    |
+| `worker@controlhorario.local`  | `Worker1234!` | empleado |
 
-### 3. Desplegar la Edge Function `crear-trabajador`
+### 3. Vincular los UUID y ejecutar el seed
 
-Esta función es lo que permite al admin dar de alta empleados con email y
-contraseña temporal sin exponer el `service_role` en la app.
+Copia el **UID** que aparece en el panel para cada uno, ábrelos en
+[`seed_users.sql`](./seed_users.sql), sustituye los placeholders
+`PEGA_AQUI_UUID_ADMIN` y `PEGA_AQUI_UUID_WORKER`, y ejecuta el script.
 
-Desde la raíz del repo, con la [Supabase CLI](https://supabase.com/docs/guides/cli)
-instalada y autenticada:
+### 4. Probar la app
 
-```bash
-supabase link --project-ref <PROJECT_REF>
-supabase functions deploy crear-trabajador
-```
+En la app Flutter (`Supabase.initialize` ya apunta al proyecto correcto
+desde `lib/main.dart`):
 
-Las variables `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY`
-se inyectan automáticamente, no hay que añadir nada manual.
+- Login con `admin@controlhorario.local` → entra al **Panel de
+  Administración** con la lista de empleados.
+- Login con `worker@controlhorario.local` → entra al home normal del
+  trabajador (`HomeShellPage`).
 
-### 4. Configurar la app Flutter
+## Privilegios (definidos por RLS en `schema.sql`)
 
-En `lib/main.dart` debe seguir apuntando al proyecto correcto en
-`Supabase.initialize(url: ..., anonKey: ...)`. No hace falta tocar nada
-más: la app llama a `supabase.functions.invoke('crear-trabajador', ...)`
-con el JWT del admin, y la Edge Function valida el rol antes de crear.
-
-## Flujo resumido
-
-- **Admin** entra con su email y contraseña. La app detecta `rol='admin'`
-  y abre el panel.
-- Desde el panel pulsa **"Nuevo trabajador"** → rellena el formulario →
-  la Edge Function crea la cuenta y marca `must_change_password=true`.
-- El admin comparte las credenciales temporales con el empleado.
-- **Empleado** entra con esas credenciales. La app detecta el flag y le
-  obliga a cambiar la contraseña antes de continuar.
-- Tras el cambio, accede a la app normalmente como `empleado`.
+- **Admin** (`is_admin()` devuelve `true`):
+  - Ve y edita todos los registros de `usuario`.
+  - Ve todos los `fichajes`.
+  - Gestiona (crea/edita/borra) los `turnos`.
+- **Empleado**:
+  - Ve y edita solo su propia fila en `usuario`.
+  - Ve e inserta solo sus propios `fichajes`.
+  - Ve los `turnos` pero no los puede modificar.

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main.dart';
 import 'supabase_app_repository.dart';
-import 'crear_trabajador_page.dart';
 
+/// Pantalla de inicio del rol administrador. Muestra el listado de
+/// empleados activos. Las acciones avanzadas (creación de cuentas,
+/// gestión de turnos, etc.) se incorporarán a medida que el equipo las
+/// vaya integrando.
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
 
@@ -52,15 +55,6 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  Future<void> _abrirCrearTrabajador() async {
-    final creado = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const CrearTrabajadorPage()),
-    );
-    if (creado == true) {
-      await _cargarEmpleados();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,11 +72,6 @@ class _AdminPageState extends State<AdminPage> {
             icon: const Icon(Icons.logout),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _abrirCrearTrabajador,
-        icon: const Icon(Icons.person_add_alt_1),
-        label: const Text('Nuevo trabajador'),
       ),
       body: _buildBody(),
     );
@@ -123,12 +112,6 @@ class _AdminPageState extends State<AdminPage> {
                   size: 56, color: AppColors.textSecondary),
               const SizedBox(height: 12),
               const Text('Todavía no hay trabajadores dados de alta.'),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _abrirCrearTrabajador,
-                icon: const Icon(Icons.person_add_alt_1),
-                label: const Text('Crear el primer trabajador'),
-              ),
             ],
           ),
         ),
@@ -137,7 +120,7 @@ class _AdminPageState extends State<AdminPage> {
     return RefreshIndicator(
       onRefresh: _cargarEmpleados,
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        padding: const EdgeInsets.all(16),
         itemCount: _empleados.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
@@ -161,12 +144,6 @@ class _AdminPageState extends State<AdminPage> {
                 ' · ${emp.rol}',
               ),
               isThreeLine: true,
-              trailing: emp.mustChangePassword
-                  ? Tooltip(
-                      message: 'Pendiente de cambiar contraseña',
-                      child: Icon(Icons.key, color: AppColors.warningOrange),
-                    )
-                  : null,
             ),
           );
         },

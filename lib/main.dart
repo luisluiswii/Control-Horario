@@ -18,7 +18,6 @@ import 'aprobaciones_page.dart';
 import 'tablon_page.dart';
 import 'asistencia_app_page.dart';
 import 'admin_page.dart';
-import 'cambiar_password_inicial_page.dart';
 import 'supabase_app_repository.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -434,24 +433,14 @@ class _LoginPageState extends State<LoginPage> {
 
       final perfil = PerfilUsuario.fromMap(Map<String, dynamic>.from(data));
 
-      // 4. Construir destino según rol
-      final Widget destino = perfil.esAdmin
-          ? const AdminPage()
-          : const HomeShellPage();
-
-      // 5. Si la contraseña es temporal, forzar cambio antes de continuar
+      // 4. Navegar según rol
       if (!mounted) return;
-      if (perfil.mustChangePassword) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => CambiarPasswordInicialPage(destino: destino),
-          ),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => destino),
-        );
-      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) =>
+              perfil.esAdmin ? const AdminPage() : const HomeShellPage(),
+        ),
+      );
     }
     catch (e) {
       String mensajeError = 'Ocurrió un error inesperado.';
