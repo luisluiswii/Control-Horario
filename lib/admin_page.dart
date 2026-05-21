@@ -61,8 +61,8 @@ class _AdminPageState extends State<AdminPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('Eliminar trabajador'),
         content: Text(
-          '¿Seguro que quieres eliminar a "${emp.nombreCompleto.isEmpty ? emp.email : emp.nombreCompleto}"? '
-          'No podrá volver a iniciar sesión.',
+          '¿Seguro que quieres eliminar a "${emp.nombreCompleto.isEmpty ? emp.email : emp.nombreCompleto}"?\n\n'
+          'Se borrará su cuenta y todos sus fichajes. Esta acción no se puede deshacer.',
         ),
         actions: [
           TextButton(
@@ -80,7 +80,7 @@ class _AdminPageState extends State<AdminPage> {
     if (confirmado != true) return;
 
     try {
-      await SupabaseAppRepository.desactivarEmpleado(emp.authUserId);
+      await SupabaseAppRepository.borrarEmpleado(emp.authUserId);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${emp.email} eliminado')),
